@@ -70,4 +70,43 @@ GROUP BY AÑO, TRIMESTRE);
 --   b) Dar permiso de selección a los supervisores y directores.
 GRANT SELECT ON V_IVA_TRIMESTRE TO R_SUPERVISOR, R_DIRECTOR;
 
- 
+-- 4.
+-- TODO
+
+-- 5. 
+--   a) Modificar la tabla Ticket con el campo Total de tipo number. Crear un paquete en PL/SQL de gestión de puntos de clientes fidelizados. 
+ALTER TABLE TICKET
+ADD (TOTAL NUMBER);
+
+--   b) El procedimiento P_Calcular_Puntos, tomará el ID de un ticket y un número de cliente fidelizado y calculará los puntos correspondientes
+--      a la compra (un punto por cada euro, pero usando la función TRUNC en el redondeo).
+--      El procedimiento siempre calculará el precio total de toda la compra y lo almacenará en el campo Total.
+--      Además, si el cliente existe (puede ser nulo o no estar en la tabla), actualizará el atributo Puntos_acumulados del cliente fidelizado.
+
+CREATE OR REPLACE PROCEDURE P_CALCULAR_PUNTOS(ID_TICKET NUMBER, ID_CLIENTE_FIDELIZADO NUMBER) IS
+TYPE T_TICKET IS RECORD (ID NUMBER, TOTAL NUMBER);
+VAR_TICKET T_TICKET;
+VAR_PTOS NUMBER;
+BEGIN
+    BEGIN
+        SELECT d.TICKET, SUM(d.CANTIDAD * p.PRECIO_ACTUAL) "TOTAL" INTO T_TICKET FROM DETALLE d
+            JOIN PRODUCTO p ON d.PRODUCTO = p.CODIGO_BARRAS
+            WHERE d.TICKET = ID_TICKET
+            GROUP BY d.TICKET;
+        VAR_PTOS := TRUNC(TICKET.TOTAL);
+        UPDATE TICKET SET TOTAL = TICKET.TOTAL WHERE ID = ID_TICKET;
+    EXCEPTION 
+        WHEN NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('ERROR: Ticket no encontrado');
+    END;
+    
+    BEGIN
+        UPDATE FIDELIZADO SET PUNTOS_ACUMULADOS = PUNTOS_ACUMULADOS + VAR_PTOS WHERE NUM_CLIENTE = ID_CLIENTE_FIDELIZADO;
+    EXCEPTION 
+        WHEN NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('WARNING: Ticket no tiene asociado ningun cliente fidelizado o este no ha sido encontrado');
+    END;
+END;
+/
+
+-- Falta otro apartado del 5
