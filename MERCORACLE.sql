@@ -190,3 +190,58 @@ BEGIN
     END IF;
 END;
 /
+-- 7.
+--Escribir un trigger que al introducir un ticket (en realidad, el detalle del ticket) decremente convenientemente el atributo Exposición de dicho producto. 
+--Si no fuese posible, debe evitarse la inserción de dicho detalle en el ticket.
+create or replace TRIGGER Introducir_ticket
+before insert on detalle for each row
+--declare
+--number1 number(100);
+begin
+   -- select exposicion into :number1 from producto where codigo_barras = :new.Producto;
+   -- if (:new.Cantidad > number1)
+    --then RAISE_APPLICATION_ERROR(-20005, 'No hay suficientes productos');
+  --  else        
+        update Producto set exposicion = (select exposicion from producto where codigo_barras = :new.Producto) - :new.Cantidad
+        where codigo_barras = :new.Producto;
+  --  end if;
+end Introducir_ticket;
+--Hemos conseguido que se resten la cantidad de productos convenientes, pero creemos que habría que impedir que estos se pusieran en negativo.
+    
+-- 8.
+create or replace TRIGGER Eliminar_fidelizado_Prueba
+for delete on fidelizado 
+COMPOUND TRIGGER
+after each row is
+begin
+    DELETE FROM ENTREGA WHERE TICKET = (SELECT ID FROM TICKET WHERE FIDELIZADO = :old.DNI);
+    DELETE FROM FACTURA WHERE ID = (SELECT ID FROM TICKET WHERE FIDELIZADO = :old.DNI);
+    DELETE FROM TICKET WHERE FIDELIZADO = :old.DNI;
+    DELETE FROM FIDELIZADO WHERE DNI = :old.DNI;
+end after each row; 
+end Eliminar_fidelizado_Prueba;
+     
+-- 9.
+BEGIN
+DBMS_SCHEDULER.CREATE_JOB (
+job_name => 'Job_Revisa_DIA',
+job_type => 'STORED_PROCEDURE',
+job_action => 'P_REVISA',
+start_date => SYSDATE+1,
+repeat_interval => 'FREQ=DAILY;BYHOUR=7',
+end_date => null,
+enabled => TRUE,
+comments => 'Ejecuta el procedimiento P_REVISA todos los dias a las 07:00');
+END;
+     
+BEGIN
+DBMS_SCHEDULER.CREATE_JOB (
+job_name => 'Job_Revisa_Semana',
+job_type => 'STORED_PROCEDURE',
+job_action => 'P_Reasignar_metros',
+start_date => SYSDATE,
+repeat_interval => 'FREQ=WEEKLY;BYDAY=SAT;BYHOUR=22',
+end_date => '30/MAY/2020 20.00.00',
+enabled => TRUE,
+comments => 'Ejecuta el procedimiento P_Reasignar_metros todos los sabados a las 22:00');
+END;
