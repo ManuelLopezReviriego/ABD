@@ -208,7 +208,10 @@ begin
 end Introducir_ticket;
 --Hemos conseguido que se resten la cantidad de productos convenientes, pero creemos que habría que impedir que estos se pusieran en negativo.
     
--- 8.
+
+ 
+-- 8.Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su información de fidelización 
+-- y las entregas que tuviera pendientes en su caso.
 create or replace TRIGGER Eliminar_fidelizado_Prueba
 for delete on fidelizado 
 COMPOUND TRIGGER
@@ -221,7 +224,10 @@ begin
 end after each row; 
 end Eliminar_fidelizado_Prueba;
      
--- 9.
+
+     
+-- 9. Crear un JOB que ejecute el procedimiento P_REVISA todos los días a las 07:00. Crear otro JOB que semanalmente (los sábados a las 22:00) 
+--    llame a P_Reasignar_metros
 BEGIN
 DBMS_SCHEDULER.CREATE_JOB (
 job_name => 'Job_Revisa_DIA',
