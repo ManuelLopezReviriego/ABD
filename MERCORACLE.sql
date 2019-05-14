@@ -182,6 +182,7 @@ END;
 --      el precio del producto).
 CREATE OR REPLACE TRIGGER TR_PRECIO_HISTORICO
 AFTER UPDATE OF PRECIO_ACTUAL ON PRODUCTO
+FOR EACH ROW
 BEGIN
     INSERT INTO HISTORICO_PRECIO VALUES (:old.codigo_barras, sysdate-1, :old.precio_actual);
 END;
