@@ -71,15 +71,17 @@ GROUP BY AÑO, TRIMESTRE);
 GRANT SELECT ON V_IVA_TRIMESTRE TO R_SUPERVISOR, R_DIRECTOR;
 
 
+
 -- 4. Crear un paquete en PL/SQL de análisis de datos.
 CREATE OR REPLACE PACKAGE PK_ANALISIS IS
 
+TYPE T_PRODUCTO IS RECORD(CODIGO_BARRAS NUMBER, PRECIO_ACTUAL NUMBER, VENDIDAS NUMBER);
 TYPE T_VALORES IS RECORD(MINIMO NUMBER, MAXIMO NUMBER, MEDIA NUMBER);
 TYPE T_VAL_FLUCTUACION IS RECORD(PRODUCTO NUMBER, MINIMO NUMBER, MAXIMO NUMBER);
 
 FUNCTION F_CALCULAR_ESTADISTICAS(PRODUCTO NUMBER, DESDE DATE, HASTA DATE) RETURN T_VALORES;
 FUNCTION F_CALCULAR_FLUCTUACION(DESDE DATE, HASTA DATE) RETURN T_VAL_FLUCTUACION;
-FUNCTION F_CALCULAR_FLUCTUACION(DESDE DATE, HASTA DATE) RETURN T_VAL_FLUCTUACION;
+PROCEDURE P_REASIGNAR_METROS(DESDE DATE);
 END;
 /
 
@@ -119,7 +121,7 @@ CREATE OR REPLACE PACKAGE BODY PK_ANALISIS AS
         FOR var_producto IN c_hist LOOP
             IF max_diff IS NULL OR var_producto.diff > max_diff THEN
                 max_diff := var_producto.diff;
-                producto_id := var_producto;
+                producto_id := var_producto.producto;
             END IF;
         END LOOP;
         
@@ -127,6 +129,51 @@ CREATE OR REPLACE PACKAGE BODY PK_ANALISIS AS
         
         RETURN resultado;
     END F_CALCULAR_FLUCTUACION;
+    
+--  c) El procedimiento P_Reasignar_metros encuentra el producto más y menos vendido (en unidades) desde una fecha hasta hoy.
+--     Extrae 0.5 metros lineales del de menor ventas y se lo asigna al de mayor ventas si es posible. Si hay varios productos
+--     que se han vendido el mismo número de veces se obtendrá el de menor ventas y menos precio y se le asigna al de mayor ventas
+--     y mayor precio.
+
+    PROCEDURE P_REASIGNAR_METROS(DESDE DATE) AS
+        CURSOR C_UNIDADES_VENDIDAS IS select p.codigo_barras, p.precio_actual, nvl(sum(d.cantidad),0) "VENDIDAS"
+                                      from producto p
+                                      left outer join detalle d on p.codigo_barras = d.producto
+                                      left outer join ticket t on d.ticket = t.id 
+                                      WHERE t.FECHA_PEDIDO >= DESDE
+                                      group by p.codigo_barras, p.precio_actual;
+        VAR_MAS_VENDIDO T_PRODUCTO;
+        VAR_MENOS_VENDIDO T_PRODUCTO;
+        VAR_METROS_LINEALES NUMBER;
+    BEGIN
+        FOR VAR_PRODUCTO IN C_UNIDADES_VENDIDAS
+        LOOP
+            IF VAR_MAS_VENDIDO.CODIGO_BARRAS IS NULL
+               OR VAR_MAS_VENDIDO.VENDIDAS < VAR_PRODUCTO.VENDIDAS
+               OR (VAR_MAS_VENDIDO.VENDIDAS = VAR_PRODUCTO.VENDIDAS AND
+                   VAR_MAS_VENDIDO.PRECIO_ACTUAL < VAR_PRODUCTO.PRECIO_ACTUAL)
+            THEN
+                VAR_MAS_VENDIDO := VAR_PRODUCTO;
+            END IF;
+            
+            IF VAR_MENOS_VENDIDO.CODIGO_BARRAS IS NULL
+               OR VAR_MENOS_VENDIDO.VENDIDAS > VAR_PRODUCTO.VENDIDAS
+               OR (VAR_MENOS_VENDIDO.VENDIDAS = VAR_PRODUCTO.VENDIDAS AND
+                   VAR_MAS_VENDIDO.PRECIO_ACTUAL > VAR_PRODUCTO.PRECIO_ACTUAL)
+            THEN
+                VAR_MAS_VENDIDO := VAR_PRODUCTO;
+            END IF;
+        END LOOP;
+        
+        SELECT METROS_LINEALES INTO VAR_METROS_LINEALES FROM PRODUCTO WHERE CODIGO_BARRAS = VAR_MENOS_VENDIDO.CODIGO_BARRAS;
+        IF VAR_METROS_LINEALES > 0.5 THEN
+            UPDATE PRODUCTO SET METROS_LINEALES = METROS_LINEALES - 0.5 WHERE CODIGO_BARRAS = VAR_MENOS_VENDIDO.CODIGO_BARRAS;
+            UPDATE PRODUCTO SET METROS_LINEALES = METROS_LINEALES + 0.5 WHERE CODIGO_BARRAS = VAR_MAS_VENDIDO.CODIGO_BARRAS;
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('ERROR: El menos vendido tiene asignado menos de 0.5 metros lineales');
+        END IF;
+        
+    END;
 END;
 /
    
