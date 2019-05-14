@@ -70,9 +70,66 @@ GROUP BY AÑO, TRIMESTRE);
 --   b) Dar permiso de selección a los supervisores y directores.
 GRANT SELECT ON V_IVA_TRIMESTRE TO R_SUPERVISOR, R_DIRECTOR;
 
--- 4.
--- TODO
 
+-- 4. Crear un paquete en PL/SQL de análisis de datos.
+CREATE OR REPLACE PACKAGE PK_ANALISIS IS
+
+TYPE T_VALORES IS RECORD(MINIMO NUMBER, MAXIMO NUMBER, MEDIA NUMBER);
+TYPE T_VAL_FLUCTUACION IS RECORD(PRODUCTO NUMBER, MINIMO NUMBER, MAXIMO NUMBER);
+
+FUNCTION F_CALCULAR_ESTADISTICAS(PRODUCTO NUMBER, DESDE DATE, HASTA DATE) RETURN T_VALORES;
+FUNCTION F_CALCULAR_FLUCTUACION(DESDE DATE, HASTA DATE) RETURN T_VAL_FLUCTUACION;
+FUNCTION F_CALCULAR_FLUCTUACION(DESDE DATE, HASTA DATE) RETURN T_VAL_FLUCTUACION;
+END;
+/
+
+CREATE OR REPLACE PACKAGE BODY PK_ANALISIS AS
+
+--  a) La función F_Calcular_Estadisticas devolverá la media, mínimo y máximo precio de un producto determinado entre dos fechas.
+
+    FUNCTION F_CALCULAR_ESTADISTICAS(PRODUCTO NUMBER, DESDE DATE, HASTA DATE) RETURN T_VALORES AS
+        resultado    T_VALORES;
+        error_fechas EXCEPTION;
+    BEGIN
+        IF DESDE > HASTA THEN
+            RAISE error_fechas;
+        END IF;
+        SELECT MIN(PRECIO), MAX(PRECIO), AVG(PRECIO) INTO resultado FROM HISTORICO_PRECIO H WHERE H.PRODUCTO = PRODUCTO AND FECHA >= DESDE AND FECHA <= HASTA;
+        RETURN resultado;
+    END F_CALCULAR_ESTADISTICAS;
+
+--  b) La función F_Calcular_Fluctuacion devolverá el mínimo y el máximo del producto que haya tenido mayor fluctuación porcentualmente
+--     en su precio de todos entre dos fechas.
+    
+    FUNCTION F_CALCULAR_FLUCTUACION(DESDE DATE, HASTA DATE) RETURN T_VAL_FLUCTUACION AS
+        CURSOR c_hist IS
+            SELECT PRODUCTO, MAX(PRECIO)-MIN(PRECIO) "DIFF", MIN(PRECIO) "MIN_PRECIO"
+            FROM HISTORICO_PRECIO
+            WHERE FECHA >= DESDE AND FECHA <= HASTA
+            GROUP BY PRODUCTO;
+        producto_id NUMBER;
+        max_diff NUMBER;
+        resultado T_VAL_FLUCTUACION;
+        error_fechas EXCEPTION;
+    BEGIN
+        IF DESDE > HASTA THEN
+            RAISE error_fechas;
+        END IF;
+        
+        FOR var_producto IN c_hist LOOP
+            IF max_diff IS NULL OR var_producto.diff > max_diff THEN
+                max_diff := var_producto.diff;
+                producto_id := var_producto;
+            END IF;
+        END LOOP;
+        
+        SELECT PRODUCTO, MIN(PRECIO), MAX(PRECIO) INTO resultado FROM HISTORICO_PRECIO WHERE PRODUCTO = producto_id GROUP BY PRODUCTO;
+        
+        RETURN resultado;
+    END F_CALCULAR_FLUCTUACION;
+END;
+/
+   
 -- 5. 
 --   a) Modificar la tabla Ticket con el campo Total de tipo number. Crear un paquete en PL/SQL de gestión de puntos de clientes fidelizados. 
 ALTER TABLE TICKET
