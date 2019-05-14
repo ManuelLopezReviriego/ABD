@@ -176,6 +176,17 @@ CREATE OR REPLACE PACKAGE BODY PK_ANALISIS AS
     END;
 END;
 /
+     
+--   d) Crear un TRIGGER que cada vez que se modifique el precio de un producto almacene el precio anterior en HISTORICO_PRECIO,
+--      poniendo la fecha a sysdate -1 (se supone que el atributo PRECIO de HISTORICO_PRECIO indica la fecha hasta la que es válido
+--      el precio del producto).
+CREATE OR REPLACE TRIGGER TR_PRECIO_HISTORICO
+AFTER UPDATE OF PRECIO_ACTUAL ON PRODUCTO
+BEGIN
+    INSERT INTO HISTORICO_PRECIO VALUES (:old.codigo_barras, sysdate-1, :old.precio_actual);
+END;
+/
+
    
 -- 5. 
 --   a) Modificar la tabla Ticket con el campo Total de tipo number. Crear un paquete en PL/SQL de gestión de puntos de clientes fidelizados. 
