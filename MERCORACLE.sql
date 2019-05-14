@@ -237,6 +237,9 @@ BEGIN
     END IF;
 END;
 /
+     
+-- 6. TO DO     
+     
 -- 7.
 --Escribir un trigger que al introducir un ticket (en realidad, el detalle del ticket) decremente convenientemente el atributo Exposición de dicho producto. 
 --Si no fuese posible, debe evitarse la inserción de dicho detalle en el ticket.
