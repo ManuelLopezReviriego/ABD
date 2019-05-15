@@ -286,7 +286,7 @@ begin
     DELETE FROM FIDELIZADO WHERE DNI = :old.DNI;
 end after each row; 
 end Eliminar_fidelizado_Prueba;
-     
+/     
 
      
 -- 9. Crear un JOB que ejecute el procedimiento P_REVISA todos los días a las 07:00. Crear otro JOB que semanalmente (los sábados a las 22:00) 
@@ -302,6 +302,7 @@ end_date => null,
 enabled => TRUE,
 comments => 'Ejecuta el procedimiento P_REVISA todos los dias a las 07:00');
 END;
+/
      
 BEGIN
 DBMS_SCHEDULER.CREATE_JOB (
@@ -314,3 +315,4 @@ end_date => '30/MAY/2020 20.00.00',
 enabled => TRUE,
 comments => 'Ejecuta el procedimiento P_Reasignar_metros todos los sabados a las 22:00');
 END;
+/
