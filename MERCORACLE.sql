@@ -534,21 +534,33 @@ exception
     when error_cantidad_insuficiente then
         dbms_output.put_line('ERROR: Cantidad insuficiente en exposicion');
 end tr_introducir_ticket;
+                                    
+/
+create or replace TRIGGER Introducir_ticket
+before insert on detalle for each row
+declare
+number1 number;
+begin
+    select exposicion into number1 from producto where codigo_barras = :new.Producto;
+    if (:new.Cantidad > number1)
+    then RAISE_APPLICATION_ERROR(-20005, 'No hay suficientes productos');
+    else        
+        update Producto set exposicion = exposicion - :new.Cantidad
+        where codigo_barras = :new.Producto;
+    end if;
+end Introducir_ticket;
 /
  
 -- 8.Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su información de fidelización 
 -- y las entregas que tuviera pendientes en su caso.
-create or replace TRIGGER Eliminar_fidelizado_Prueba
-for delete on fidelizado 
-COMPOUND TRIGGER
-after each row is
+create or replace TRIGGER Eliminar_fidelizado
+before delete on fidelizado 
+for each row 
 begin
     DELETE FROM ENTREGA WHERE TICKET = (SELECT ID FROM TICKET WHERE FIDELIZADO = :old.DNI);
     DELETE FROM FACTURA WHERE ID = (SELECT ID FROM TICKET WHERE FIDELIZADO = :old.DNI);
     DELETE FROM TICKET WHERE FIDELIZADO = :old.DNI;
-    DELETE FROM FIDELIZADO WHERE DNI = :old.DNI;
-end after each row; 
-end Eliminar_fidelizado_Prueba;
+end Eliminar_fidelizado;
 /     
 
      
