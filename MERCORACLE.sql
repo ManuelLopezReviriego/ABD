@@ -255,22 +255,23 @@ END;
 -- 7.
 --Escribir un trigger que al introducir un ticket (en realidad, el detalle del ticket) decremente convenientemente el atributo Exposición de dicho producto. 
 --Si no fuese posible, debe evitarse la inserción de dicho detalle en el ticket.
-create or replace TRIGGER Introducir_ticket
+create or replace TRIGGER tr_introducir_ticket
 before insert on detalle for each row
---declare
---number1 number(100);
-begin
-   -- select exposicion into :number1 from producto where codigo_barras = :new.Producto;
-   -- if (:new.Cantidad > number1)
-    --then RAISE_APPLICATION_ERROR(-20005, 'No hay suficientes productos');
-  --  else        
-        update Producto set exposicion = (select exposicion from producto where codigo_barras = :new.Producto) - :new.Cantidad
-        where codigo_barras = :new.Producto;
-  --  end if;
-end Introducir_ticket;
---Hemos conseguido que se resten la cantidad de productos convenientes, pero creemos que habría que impedir que estos se pusieran en negativo.
-    
-
+declare
+var_exposicion number;
+error_cantidad_insuficiente exception;
+begin     
+    select exposicion into var_exposicion from producto where codigo_barras = :new.Producto;
+    if var_exposicion < :new.Cantidad
+    then
+        raise error_cantidad_insuficiente;
+    end if;
+    update Producto set exposicion = var_exposicion - :new.Cantidad where codigo_barras = :new.Producto;
+exception
+    when error_cantidad_insuficiente then
+        dbms_output.put_line('ERROR: Cantidad insuficiente en exposicion');
+end tr_introducir_ticket;
+/
  
 -- 8.Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su información de fidelización 
 -- y las entregas que tuviera pendientes en su caso.
