@@ -479,14 +479,41 @@ EXCEPTION
 
 END;
 
-PROCEDURE P_EmpleadoDelAño(empleado EMPLEADO%ROWTYPE) AS 
-BEGIN
---to do
-EXCEPTION
-END;
+-- Habrá un procedimiento P_EmpleadoDelAño que aumentará el sueldo bruto en un 10% al empleado más eficiente en caja (que ha emitido un mayor número de tickets).
 
-END empleados;
+-- TODO
+CREATE OR REPLACE PROCEDURE P_EMPLEADO_DEL_AÑO AS
+VAR_MAX_EMITIDOS NUMBER;
+VAR_EMPLEADO NUMBER;
+CURSOR C_NOMINAS(empleado_id number) IS SELECT * FROM NOMINA
+                                        WHERE EXTRACT(YEAR FROM FECHA_EMISION) = EXTRACT(YEAR FROM SYSDATE)
+                                              AND EMPLEADO = (empleado_id);
+BEGIN
+    SELECT MAX(EMITIDOS) INTO VAR_MAX_EMITIDOS FROM
+        (SELECT EMPLEADO, COUNT(*) "EMITIDOS"
+         FROM TICKET
+         WHERE EXTRACT(YEAR FROM FECHA_PEDIDO) = EXTRACT(YEAR FROM SYSDATE) 
+         GROUP BY EMPLEADO, EXTRACT(YEAR FROM FECHA_PEDIDO));
+         
+    SELECT EMPLEADO INTO VAR_EMPLEADO FROM (SELECT EMPLEADO
+        FROM TICKET
+        WHERE EXTRACT(YEAR FROM FECHA_PEDIDO) = EXTRACT(YEAR FROM SYSDATE)
+        GROUP BY EMPLEADO, EXTRACT(YEAR FROM FECHA_PEDIDO)
+        HAVING COUNT(*) = VAR_MAX_EMITIDOS)
+    WHERE ROWID < 2;
+    
+    DBMS_OUTPUT.PUT_LINE('INFO: El empleado mas eficiente en caja el año ' || EXTRACT(YEAR FROM SYSDATE) || ' fue ' || VAR_EMPLEADO);
+    
+    -- en la tabla nomina?
+    FOR VAR_NOMINA IN C_NOMINAS
+    LOOP
+        UPDATE NOMINA SET IMPORTE_BRUTO = VAR_NOMINA.IMPORTE_BRUTO*1.1 WHERE FECHA_EMISION = VAR_NOMINA.FECHA_EMISION;
+    END LOOP;
+END;
 /
+
+
+
      
 -- 7.
 --Escribir un trigger que al introducir un ticket (en realidad, el detalle del ticket) decremente convenientemente el atributo Exposición de dicho producto. 
