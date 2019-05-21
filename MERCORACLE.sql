@@ -526,7 +526,6 @@ EXCEPTION
 END;
 
 -- Habrá un procedimiento P_EmpleadoDelAño que aumentará el sueldo bruto en un 10% al empleado más eficiente en caja (que ha emitido un mayor número de tickets).
-
 CREATE OR REPLACE PROCEDURE P_EMPLEADO_DEL_AÑO AS
 VAR_MAX_EMITIDOS NUMBER;
 VAR_EMPLEADO NUMBER;
@@ -545,19 +544,17 @@ BEGIN
         WHERE EXTRACT(YEAR FROM FECHA_PEDIDO) = EXTRACT(YEAR FROM SYSDATE)
         GROUP BY EMPLEADO, EXTRACT(YEAR FROM FECHA_PEDIDO)
         HAVING COUNT(*) = VAR_MAX_EMITIDOS)
-    WHERE ROWID < 2;
+    FETCH FIRST ROW ONLY;
     
     DBMS_OUTPUT.PUT_LINE('INFO: El empleado mas eficiente en caja el año ' || EXTRACT(YEAR FROM SYSDATE) || ' fue ' || VAR_EMPLEADO);
     
     -- en la tabla nomina?
-    FOR VAR_NOMINA IN C_NOMINAS
+    FOR VAR_NOMINA IN C_NOMINAS(VAR_EMPLEADO)
     LOOP
         UPDATE NOMINA SET IMPORTE_BRUTO = VAR_NOMINA.IMPORTE_BRUTO*1.1 WHERE FECHA_EMISION = VAR_NOMINA.FECHA_EMISION;
     END LOOP;
 END;
 /
-
-
 
      
 -- 7.
