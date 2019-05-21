@@ -300,41 +300,41 @@ END;
 CREATE OR REPLACE PACKAGE paqueteEmpleados AS
   PROCEDURE crearEmpleado
     (id NUMBER, 
-     dni VARCHAR2(9 CHAR), 
-     nombre VARCHAR2(20 CHAR), 
-     apellido1 VARCHAR2(30 CHAR), 
-     apellido2 VARCHAR2(30 CHAR), 
-     domicilio VARCHAR2(100 CHAR), 
-     codigo_postal NUMBER(5,0), 
-     telefono VARCHAR2(15 CHAR), 
-     email VARCHAR2(50 CHAR), 
+     dni VARCHAR2, 
+     nombre VARCHAR2,
+     apellido1 VARCHAR2,
+     apellido2 VARCHAR2,
+     domicilio VARCHAR2,
+     codigo_postal NUMBER,
+     telefono VARCHAR2,
+     email VARCHAR2,
      cat_empleado NUMBER, 
      fecha_alta DATE, 
-     usuario VARCHAR2(30 BYTE));
+     usuario VARCHAR2);
 
-  PROCEDURE borrarEmpleado(dni VARCHAR2(9 CHAR));
+  PROCEDURE borrarEmpleado(dni VARCHAR2);
 
   PROCEDURE modificarEmpleado(
      id NUMBER, 
-     dni VARCHAR2(9 CHAR), 
-     nombre VARCHAR2(20 CHAR), 
-     apellido1 VARCHAR2(30 CHAR), 
-     apellido2 VARCHAR2(30 CHAR), 
-     domicilio VARCHAR2(100 CHAR), 
-     codigo_postal NUMBER(5,0), 
-     telefono VARCHAR2(15 CHAR), 
-     email VARCHAR2(50 CHAR), 
+     dni VARCHAR2,
+     nombre VARCHAR2,
+     apellido1 VARCHAR2,
+     apellido2 VARCHAR2,
+     domicilio VARCHAR2,
+     codigo_postal NUMBER,
+     telefono VARCHAR2,
+     email VARCHAR2,
      cat_empleado NUMBER, 
      fecha_alta DATE, 
-     usuario VARCHAR2(30 BYTE));
+     usuario VARCHAR2);
 
 PROCEDURE bloquearUsuario(empleado EMPLEADO%ROWTYPE);
                       
 PROCEDURE desbloquearUsuario(empleado EMPLEADO%ROWTYPE);
                       
-PROCEDURE bloquearTodos();
+PROCEDURE bloquearTodos;
                       
-PROCEDURE desbloquearTodos();
+PROCEDURE desbloquearTodos;
 
 PROCEDURE P_EmpleadoDelAño(empleado EMPLEADO%ROWTYPE);
 
