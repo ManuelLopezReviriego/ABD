@@ -239,45 +239,51 @@ ADD (TOTAL NUMBER);
 --      El procedimiento siempre calculará el precio total de toda la compra y lo almacenará en el campo Total.
 --      Además, si el cliente existe (puede ser nulo o no estar en la tabla), actualizará el atributo Puntos_acumulados del cliente fidelizado.
 
-CREATE OR REPLACE PROCEDURE P_CALCULAR_PUNTOS(ID_TICKET NUMBER, ID_CLIENTE_FIDELIZADO NUMBER) IS
+CREATE OR REPLACE PROCEDURE P_CALCULAR_PUNTOS(ID_TICKET NUMBER, ID_CLIENTE_FIDELIZADO VARCHAR2) IS
 TYPE T_TICKET IS RECORD (ID NUMBER, TOTAL NUMBER);
 VAR_TICKET T_TICKET;
 VAR_PTOS NUMBER;
 BEGIN
     BEGIN
-        SELECT d.TICKET, SUM(d.CANTIDAD * p.PRECIO_ACTUAL) "TOTAL" INTO T_TICKET FROM DETALLE d
+        SELECT d.TICKET, SUM(d.CANTIDAD * p.PRECIO_ACTUAL) "TOTAL" INTO VAR_TICKET FROM DETALLE d
             JOIN PRODUCTO p ON d.PRODUCTO = p.CODIGO_BARRAS
             WHERE d.TICKET = ID_TICKET
             GROUP BY d.TICKET;
-        VAR_PTOS := TRUNC(TICKET.TOTAL);
+        VAR_PTOS := TRUNC(VAR_TICKET.TOTAL);
         UPDATE TICKET SET TOTAL = TICKET.TOTAL WHERE ID = ID_TICKET;
+        BEGIN
+            UPDATE FIDELIZADO SET PUNTOS_ACUMULADOS = PUNTOS_ACUMULADOS + VAR_PTOS WHERE DNI = ID_CLIENTE_FIDELIZADO;
+            DBMS_OUTPUT.PUT_LINE('ACTUALIZACION DE PUNTOS DE UN CLIENTE FIDELIZADO:');
+            DBMS_OUTPUT.PUT_LINE(' - Incremento de puntos: ' || VAR_PTOS);
+        EXCEPTION 
+            WHEN NO_DATA_FOUND THEN
+                DBMS_OUTPUT.PUT_LINE('WARNING: Ticket no tiene asociado ningun cliente fidelizado o este no ha sido encontrado');
+        END;
     EXCEPTION 
         WHEN NO_DATA_FOUND THEN
             DBMS_OUTPUT.PUT_LINE('ERROR: Ticket no encontrado');
     END;
-    
-    BEGIN
-        UPDATE FIDELIZADO SET PUNTOS_ACUMULADOS = PUNTOS_ACUMULADOS + VAR_PTOS WHERE NUM_CLIENTE = ID_CLIENTE_FIDELIZADO;
-    EXCEPTION 
-        WHEN NO_DATA_FOUND THEN
-            DBMS_OUTPUT.PUT_LINE('WARNING: Ticket no tiene asociado ningun cliente fidelizado o este no ha sido encontrado');
-    END;
 END;
 /
+
+/*
+SELECT * FROM FIDELIZADO WHERE DNI = '78678644';
+EXECUTE P_CALCULAR_PUNTOS(2, '78678644');
+*/
 
 --   c) El procedimiento P_Aplicar_puntos tomará el ID de un ticket y un número de cliente fidelizado. Cada punto_acumulado es un céntimo de
 --      descuento. Calcular el descuento teniendo en cuenta que no puede ser mayor que el precio total y actualizar el precio total y los
 --      puntos acumulados. Por ejemplo, si el precio total es 40 y tiene 90 puntos, el nuevo precio es  40-0,9=39,1 y los puntos pasan a ser cero.
 --      Si el precio es 10 y tiene 1500 puntos, el nuevo precio es 0 y le quedan 500 puntos.
 
-CREATE VIEW DESCUENTO_MAXIMO_FIDELIZADO AS
+CREATE OR REPLACE VIEW DESCUENTO_MAXIMO_FIDELIZADO AS
     SELECT NUM_CLIENTE, PUNTOS_ACUMULADOS/100 "DESCUENTO_MAXIMO" FROM FIDELIZADO;
 
 CREATE OR REPLACE PROCEDURE P_APLICAR_PUNTOS(ID_TICKET NUMBER, ID_CLIENTE_FIDELIZADO NUMBER) IS
 VAR_TOTAL_TICKET NUMBER;
 VAR_DESCUENTO NUMBER;
 BEGIN
-    SELECT TOTAL            INTO VAR_TOTAL_TICKET FROM TICKET WHERE TICKET = ID_TICKET;
+    SELECT TOTAL            INTO VAR_TOTAL_TICKET FROM TICKET WHERE ID = ID_TICKET;
     SELECT DESCUENTO_MAXIMO INTO VAR_DESCUENTO FROM DESCUENTO_MAXIMO_FIDELIZADO WHERE NUM_CLIENTE = ID_CLIENTE_FIDELIZADO;
     
     IF VAR_TOTAL_TICKET >= VAR_DESCUENTO THEN
@@ -290,7 +296,7 @@ BEGIN
 END;
 /
      
--- 6. rear un paquete en PL/SQL de gestión de empleados que incluya las operaciones para crear, borrar y modificar los datos de un empleado. 
+-- 6. Crear un paquete en PL/SQL de gestión de empleados que incluya las operaciones para crear, borrar y modificar los datos de un empleado. 
 CREATE OR REPLACE PACKAGE paqueteEmpleados AS
   PROCEDURE crearEmpleado
     (id NUMBER, 
@@ -521,7 +527,6 @@ END;
 
 -- Habrá un procedimiento P_EmpleadoDelAño que aumentará el sueldo bruto en un 10% al empleado más eficiente en caja (que ha emitido un mayor número de tickets).
 
--- TODO
 CREATE OR REPLACE PROCEDURE P_EMPLEADO_DEL_AÑO AS
 VAR_MAX_EMITIDOS NUMBER;
 VAR_EMPLEADO NUMBER;
