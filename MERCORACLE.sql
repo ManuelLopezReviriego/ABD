@@ -556,10 +556,15 @@ end Introducir_ticket;
 create or replace TRIGGER Eliminar_fidelizado
 before delete on fidelizado 
 for each row 
+DECLARE
+    CURSOR C_ENTREGAS IS 
+        SELECT ID FROM TICKET WHERE FIDELIZADO = :old.DNI;
 begin
-    DELETE FROM ENTREGA WHERE TICKET = (SELECT ID FROM TICKET WHERE FIDELIZADO = :old.DNI);
-    DELETE FROM FACTURA WHERE ID = (SELECT ID FROM TICKET WHERE FIDELIZADO = :old.DNI);
-    DELETE FROM TICKET WHERE FIDELIZADO = :old.DNI;
+    FOR e_ticket IN C_ENTREGAS LOOP
+        DELETE FROM ENTREGA WHERE TICKET = e_ticket.ID;
+        DELETE FROM FACTURA WHERE ID = e_ticket.ID;
+        UPDATE TICKET SET FIDELIZADO = NULL WHERE ID = e_ticket.ID;
+    END LOOP;   
 end Eliminar_fidelizado;
 /     
 
