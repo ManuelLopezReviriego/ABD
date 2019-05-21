@@ -14,6 +14,7 @@ CREATE ROLE R_SUPERVISOR;
 CREATE ROLE R_CAJERO;
 
 
+
 -- 2.
 --   a) Crear una tabla denominada REVISION con la fecha, código de barras del producto e id del pasillo.
 DESC REVISION;
@@ -22,10 +23,6 @@ DESC REVISION;
 --      de conservación y que NO cumplen que:
 --        i) Teniendo una temperatura menor de 0ºC no se encuentran en Congelados.
 --       ii) Teniendo una temperatura entre 0ºC y 6ºC no se encuentran en Refrigerados.
-
-SELECT CODIGO_BARRAS, pas.DESCRIPCION, TEMPERATURA FROM PRODUCTO pro
-JOIN PASILLO pas ON PASILLO = ID
-WHERE TEMPERATURA IS NOT NULL;
 
 CREATE OR REPLACE PROCEDURE P_REVISA IS
 CURSOR C_PRODUCTOS IS SELECT CODIGO_BARRAS, pas.DESCRIPCION, pro.PASILLO, TEMPERATURA FROM PRODUCTO pro
@@ -45,11 +42,21 @@ BEGIN
 END;
 /
 
+/*
+DELETE FROM REVISION;
+EXECUTE P_REVISA;
+SELECT R.CODIGO_BARRAS, P.TEMPERATURA, PA.DESCRIPCION FROM REVISION R
+JOIN PRODUCTO P ON P.CODIGO_BARRAS = R.CODIGO_BARRAS
+JOIN PASILLO PA ON R.PASILLO = PA.ID;
+*/
+
 --   c) Crear vista denominada V_REVISION_HOY con los datos de REVISION correspondientes al día de hoy.
 CREATE OR REPLACE VIEW V_REVISION_HOY AS SELECT * FROM REVISION WHERE TRUNC(FECHA) = TRUNC(SYSDATE);
 
---SELECT * FROM REVISION;
---SELECT * FROM V_REVISION_HOY;
+/*
+SELECT * FROM REVISION;
+SELECT * FROM V_REVISION_HOY;
+*/
 
 --   d) Otorgar permiso a R_CAJERO para seleccionar V_REVISION_HOY.
 GRANT SELECT ON V_REVISION_HOY TO R_CAJERO;
@@ -57,15 +64,27 @@ GRANT SELECT ON V_REVISION_HOY TO R_CAJERO;
 --   e) Dar permiso de ejecución sobre el procedimiento P_REVISA a R_SUPERVISOR
 GRANT EXECUTE ON P_REVISA TO R_SUPERVISOR;
 
+--SELECT * FROM ROLE_TAB_PRIVS WHERE ROLE != 'R_DIRECTOR';
+
+
+
 -- 3. 
 --   a) Crear vista V_IVA_TRIMESTRE con los atributos AÑO, TRIMESTRE (num entre 1 y 4), IVA_TOTAL (suma del IVA de los productos vendidos en ese trimestre).
-CREATE OR REPLACE VIEW V_IVA_TRIMESTRE AS
-(SELECT AÑO, TRIMESTRE, SUM(CANTIDAD*PRECIO_ACTUAL*IVA/100)"IVA_TOTAL" FROM 
-    (SELECT ROUND(EXTRACT(YEAR FROM FECHA_PEDIDO)) "AÑO", ROUND(EXTRACT(MONTH FROM FECHA_PEDIDO)/3) "TRIMESTRE", IVA, PRECIO_ACTUAL, CANTIDAD FROM TICKET t
+CREATE OR REPLACE VIEW V_IVA_PRODUCTO AS 
+    SELECT CODIGO_BARRAS, IVA, PRECIO_ACTUAL
+    FROM PRODUCTO p
+    JOIN CATEGORIA c ON p.CATEGORIA = c.ID;
+
+CREATE OR REPLACE VIEW V_VENTAS AS 
+    SELECT ROUND(EXTRACT(YEAR FROM FECHA_PEDIDO)) "AÑO", ROUND(EXTRACT(MONTH FROM FECHA_PEDIDO)/3) "TRIMESTRE", IVA, PRECIO_ACTUAL, CANTIDAD
+    FROM TICKET t
     JOIN DETALLE d ON t.ID = d.TICKET
-    JOIN (SELECT CODIGO_BARRAS, IVA, PRECIO_ACTUAL FROM PRODUCTO p JOIN CATEGORIA c ON p.CATEGORIA = c.ID) iva_producto
-    ON d.PRODUCTO = iva_producto.CODIGO_BARRAS)
-GROUP BY AÑO, TRIMESTRE);
+    NATURAL JOIN V_IVA_PRODUCTO iva_producto;
+
+CREATE OR REPLACE VIEW V_IVA_TRIMESTRE AS 
+    SELECT AÑO, TRIMESTRE, SUM(CANTIDAD*PRECIO_ACTUAL*IVA/100)"IVA_TOTAL"
+    FROM V_VENTAS
+    GROUP BY AÑO, TRIMESTRE;
 
 --   b) Dar permiso de selección a los supervisores y directores.
 GRANT SELECT ON V_IVA_TRIMESTRE TO R_SUPERVISOR, R_DIRECTOR;
@@ -97,6 +116,10 @@ CREATE OR REPLACE PACKAGE BODY PK_ANALISIS AS
             RAISE error_fechas;
         END IF;
         SELECT MIN(PRECIO), MAX(PRECIO), AVG(PRECIO) INTO resultado FROM HISTORICO_PRECIO H WHERE H.PRODUCTO = PRODUCTO AND FECHA >= DESDE AND FECHA <= HASTA;
+        DBMS_OUTPUT.PUT_LINE('ESTADISTICAS DEL PRODUCTO ' || PRODUCTO || ' DESDE ' || DESDE || ' HASTA ' || HASTA || ':');
+        DBMS_OUTPUT.PUT_LINE(' -Precio minimo: ' || resultado.minimo);
+        DBMS_OUTPUT.PUT_LINE(' -Precio maximo: ' || resultado.maximo);
+        DBMS_OUTPUT.PUT_LINE(' -Precio medio: ' || resultado.media);
         RETURN resultado;
     END F_CALCULAR_ESTADISTICAS;
 
@@ -126,7 +149,10 @@ CREATE OR REPLACE PACKAGE BODY PK_ANALISIS AS
         END LOOP;
         
         SELECT PRODUCTO, MIN(PRECIO), MAX(PRECIO) INTO resultado FROM HISTORICO_PRECIO WHERE PRODUCTO = producto_id GROUP BY PRODUCTO;
-        
+        DBMS_OUTPUT.PUT_LINE('EL PRODUCTO CUYO PRECIO HA FLUCTUADO MÁS DESDE ' || DESDE || ' HASTA ' || HASTA || ':');
+        DBMS_OUTPUT.PUT_LINE(' -Codigo de barras: ' || resultado.producto);
+        DBMS_OUTPUT.PUT_LINE(' -Precio minimo: ' || resultado.minimo);
+        DBMS_OUTPUT.PUT_LINE(' -Precio maximo: ' || resultado.maximo);
         RETURN resultado;
     END F_CALCULAR_FLUCTUACION;
     
@@ -142,43 +168,47 @@ CREATE OR REPLACE PACKAGE BODY PK_ANALISIS AS
                                       left outer join ticket t on d.ticket = t.id 
                                       WHERE t.FECHA_PEDIDO >= DESDE
                                       group by p.codigo_barras, p.precio_actual;
-        VAR_MAS_VENDIDO T_PRODUCTO;
-        VAR_MENOS_VENDIDO T_PRODUCTO;
+        VAR_MAS_VENDIDO T_PRODUCTO := T_PRODUCTO(-1, 0, 0);
+        VAR_MENOS_VENDIDO T_PRODUCTO := T_PRODUCTO(-1, 0, 0);
         VAR_METROS_LINEALES NUMBER;
     BEGIN
         FOR VAR_PRODUCTO IN C_UNIDADES_VENDIDAS
         LOOP
-            IF VAR_MAS_VENDIDO.CODIGO_BARRAS IS NULL
+            IF VAR_MAS_VENDIDO.CODIGO_BARRAS = -1
                OR VAR_MAS_VENDIDO.VENDIDAS < VAR_PRODUCTO.VENDIDAS
                OR (VAR_MAS_VENDIDO.VENDIDAS = VAR_PRODUCTO.VENDIDAS AND
                    VAR_MAS_VENDIDO.PRECIO_ACTUAL < VAR_PRODUCTO.PRECIO_ACTUAL)
             THEN
-                VAR_MAS_VENDIDO := VAR_PRODUCTO;
+                VAR_MAS_VENDIDO := T_PRODUCTO(VAR_PRODUCTO.CODIGO_BARRAS,
+                                              VAR_PRODUCTO.PRECIO_ACTUAL,
+                                              VAR_PRODUCTO.VENDIDAS);
             END IF;
-            
-            IF VAR_MENOS_VENDIDO.CODIGO_BARRAS IS NULL
+
+            IF VAR_MENOS_VENDIDO.CODIGO_BARRAS = -1
                OR VAR_MENOS_VENDIDO.VENDIDAS > VAR_PRODUCTO.VENDIDAS
-               OR (VAR_MENOS_VENDIDO.VENDIDAS = VAR_PRODUCTO.VENDIDAS AND
-                   VAR_MAS_VENDIDO.PRECIO_ACTUAL > VAR_PRODUCTO.PRECIO_ACTUAL)
+               OR (VAR_MENOS_VENDIDO.VENDIDAS = VAR_PRODUCTO.VENDIDAS AND VAR_MENOS_VENDIDO.PRECIO_ACTUAL < VAR_PRODUCTO.PRECIO_ACTUAL)
             THEN
-                VAR_MAS_VENDIDO := VAR_PRODUCTO;
+                VAR_MENOS_VENDIDO := T_PRODUCTO(VAR_PRODUCTO.CODIGO_BARRAS,
+                                                VAR_PRODUCTO.PRECIO_ACTUAL,
+                                                VAR_PRODUCTO.VENDIDAS);
             END IF;
         END LOOP;
         
         SELECT METROS_LINEALES INTO VAR_METROS_LINEALES FROM PRODUCTO WHERE CODIGO_BARRAS = VAR_MENOS_VENDIDO.CODIGO_BARRAS;
         IF VAR_METROS_LINEALES > 0.5 THEN
+            DBMS_OUTPUT.PUT_LINE('Se han asignado 0.5 metros lineales más a ' || VAR_MAS_VENDIDO.CODIGO_BARRAS);
+            DBMS_OUTPUT.PUT_LINE('Se han retirado 0.5 metros lineales a ' || VAR_MENOS_VENDIDO.CODIGO_BARRAS);
             UPDATE PRODUCTO SET METROS_LINEALES = METROS_LINEALES - 0.5 WHERE CODIGO_BARRAS = VAR_MENOS_VENDIDO.CODIGO_BARRAS;
             UPDATE PRODUCTO SET METROS_LINEALES = METROS_LINEALES + 0.5 WHERE CODIGO_BARRAS = VAR_MAS_VENDIDO.CODIGO_BARRAS;
         ELSE
             DBMS_OUTPUT.PUT_LINE('ERROR: El menos vendido tiene asignado menos de 0.5 metros lineales');
         END IF;
-        
     END;
 END;
 /
-     
+
 --   d) Crear un TRIGGER que cada vez que se modifique el precio de un producto almacene el precio anterior en HISTORICO_PRECIO,
---      poniendo la fecha a sysdate -1 (se supone que el atributo PRECIO de HISTORICO_PRECIO indica la fecha hasta la que es válido
+--      poniendo la fecha a sysdate - 1 (se supone que el atributo PRECIO de HISTORICO_PRECIO indica la fecha hasta la que es válido
 --      el precio del producto).
 CREATE OR REPLACE TRIGGER TR_PRECIO_HISTORICO
 AFTER UPDATE OF PRECIO_ACTUAL ON PRODUCTO
@@ -187,6 +217,16 @@ BEGIN
     INSERT INTO HISTORICO_PRECIO VALUES (:old.codigo_barras, sysdate-1, :old.precio_actual);
 END;
 /
+
+/*
+UPDATE PRODUCTO
+    SET PRECIO_ACTUAL = PRECIO_ACTUAL*0.5
+    WHERE UPPER(DESCRIPCION) = 'CERVEZA SAN MIGUEL';
+    
+SELECT * FROM PRODUCTO WHERE UPPER(DESCRIPCION) = 'CERVEZA SAN MIGUEL';
+
+SELECT * FROM HISTORICO_PRECIO;
+*/
 
    
 -- 5. 
