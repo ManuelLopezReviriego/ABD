@@ -346,23 +346,24 @@ END paqueteEmpleados;
 CREATE OR REPLACE PACKAGE BODY paqueteEmpleados AS
   PROCEDURE crearEmpleado (
     id NUMBER, 
-    dni VARCHAR2(9 CHAR), 
-    nombre VARCHAR2(20 CHAR), 
-    apellido1 VARCHAR2(30 CHAR), 
-    apellido2 VARCHAR2(30 CHAR), 
-    domicilio VARCHAR2(100 CHAR), 
-    codigo_postal NUMBER(5,0), 
-    telefono VARCHAR2(15 CHAR), 
-    email VARCHAR2(50 CHAR), 
+    dni VARCHAR2,
+    nombre VARCHAR2,
+    apellido1 VARCHAR2,
+    apellido2 VARCHAR2,
+    domicilio VARCHAR2,
+    codigo_postal NUMBER,
+    telefono VARCHAR2,
+    email VARCHAR2,
     cat_empleado NUMBER, 
     fecha_alta DATE, 
-    usuario VARCHAR2(30 BYTE)) IS
-DECLARE
-    catEmpleadoString VARCHAR2(50 CHAR);
-    error_categoria_no_valida exception;
+    usuario VARCHAR2) IS
+catEmpleadoString VARCHAR2(20 char);
+error_categoria_no_valida exception;
 BEGIN
-  INSERT INTO empleados(
+  INSERT INTO EMPLEADO 
+  VALUES(
         id,
+        dni,
         nombre,
         apellido1,
         apellido2,
@@ -373,160 +374,132 @@ BEGIN
         cat_empleado,
         fecha_alta,
         usuario
-    )
-  VALUES(
-        crearEmpleado.id,
-        crearEmpleado.nombre,
-        crearEmpleado.apellido1,
-        crearEmpleado.apellido2,
-        crearEmpleado.domicilio,
-        crearEmpleado.codigo_postal,
-        crearEmpleado.telefono,
-        crearEmpleado.email,
-        crearEmpleado.cat_empleado,
-        crearEmpleado.fecha_alta,
-        crearEmpleado.usuario
     );
     
-  IF crearEmpleado.usuario IS NOT NULL THEN
-    IF crearEmpleado.cat_empleado = 1 THEN
-      crearEmpleadoString := 'R_DIRECTOR';    
-    ELSEIF crearEmpleado.cat_empleado = 2 THEN
-        crearEmpleadoString := 'R_SUPERVISOR';
-    ELSEIF crearEmpleado.cat_empleado = 3 THEN
-        crearEmpleadoString := 'R_CAJERO';
-    ELSE ;
+  IF usuario IS NOT NULL THEN
+    IF cat_empleado = 1 THEN
+      catEmpleadoString := 'R_DIRECTOR';    
+    ELSIF cat_empleado = 2 THEN
+        catEmpleadoString := 'R_SUPERVISOR';
+    ELSIF cat_empleado = 3 THEN
+        catEmpleadoString := 'R_CAJERO';
+    ELSE
         raise error_categoria_no_valida;
     END IF;
     
     EXECUTE IMMEDIATE
-            'CREATE USER ' ||crearEmpleado.usuario|| ' IDENTIFIED BY mercoracle
-            PROFILE ' ||createEmpleadoString|| '; ';
+            'CREATE USER ' ||usuario|| ' IDENTIFIED BY mercoracle
+            PROFILE ' ||catEmpleadoString|| '; ';
+    END IF; 
+EXCEPTION
+  WHEN error_categoria_no_valida THEN
+    DBMS_OUTPUT.PUT_LINE('ERROR: Categoria no valida');
+END crearEmpleado;
+
+PROCEDURE modificarEmpleado (
+    n_id NUMBER, 
+    n_dni VARCHAR2,
+    n_nombre VARCHAR2,
+    n_apellido1 VARCHAR2,
+    n_apellido2 VARCHAR2,
+    n_domicilio VARCHAR2,
+    n_codigo_postal NUMBER,
+    n_telefono VARCHAR2,
+    n_email VARCHAR2,
+    n_cat_empleado NUMBER, 
+    n_fecha_alta DATE, 
+    n_usuario VARCHAR2) IS
+catEmpleadoString VARCHAR2(20);
+error_categoria_no_valida EXCEPTION;
+BEGIN
+  UPDATE empleado SET
+        id = n_id,
+        nombre = n_nombre,
+        apellido1 = n_apellido1,
+        apellido2 = n_apellido2,
+        domicilio = n_domicilio,
+        codigo_postal = n_codigo_postal,
+        telefono = n_telefono,
+        email = n_email,
+        cat_empleado = n_cat_empleado,
+        fecha_alta = n_fecha_alta,
+        usuario = n_usuario;
+    
+  IF n_usuario IS NOT NULL THEN
+    IF n_cat_empleado = 1 THEN
+      catEmpleadoString := 'R_DIRECTOR';    
+    ELSIF n_cat_empleado = 2 THEN
+        catEmpleadoString := 'R_SUPERVISOR';
+    ELSIF n_cat_empleado = 3 THEN
+        catEmpleadoString := 'R_CAJERO';
+    ELSE
+        raise error_categoria_no_valida;
+    END IF;
+    
+    EXECUTE IMMEDIATE
+            'CREATE USER ' ||n_usuario|| ' IDENTIFIED BY mercoracle
+            PROFILE ' ||catEmpleadoString|| '; ';
     END IF;
                      
 EXCEPTION
   WHEN error_categoria_no_valida THEN
     DBMS_OUTPUT.PUT_LINE('ERROR: Categoria no valida');
-END;
+END modificarEmpleado;
 
-
-PROCEDURE borrarEmpleado(dni VARCHAR2(9 CHAR)) AS
+PROCEDURE borrarEmpleado(dni VARCHAR2) AS
+var_usuario VARCHAR2(10);
 BEGIN
-     DELETE FROM empleado e WHERE upper(e.dni) = upper(dni);
-     EXECUTE IMMEDIATE 'DROP USER ' ||empleado.usuario|| ';' 
+    SELECT usuario INTO var_usuario FROM EMPLEADO;
+    DELETE FROM empleado e WHERE upper(e.dni) = upper(dni);
+    EXECUTE IMMEDIATE 'DROP USER ' || var_usuario || ';';
 EXCEPTION
   WHEN DATA_NOT_FOUND THEN
     DBMS_OUTPUT.PUT_LINE('ERROR: El empleado con DNI ' || dni || ' no existe');
-END;
+END borrarEmpleado;
 
-PROCEDURE modificarEmpleado(
-    id NUMBER, 
-    dni VARCHAR2(9 CHAR), 
-    nombre VARCHAR2(20 CHAR), 
-    apellido1 VARCHAR2(30 CHAR), 
-    apellido2 VARCHAR2(30 CHAR), 
-    domicilio VARCHAR2(100 CHAR), 
-    codigo_postal NUMBER(5,0), 
-    telefono VARCHAR2(15 CHAR), 
-    email VARCHAR2(50 CHAR), 
-    cat_empleado NUMBER, 
-    fecha_alta DATE, 
-    usuario VARCHAR2(30 BYTE)) AS
-DECLARE
-    catEmpleadoString VARCHAR2(50 CHAR);
-BEGIN
-    UPDATE empleados SET
-        (
-        id,
-        nombre,
-        apellido1,
-        apellido2,
-        domicilio,
-        codigo_postal,
-        telefono,
-        email,
-        cat_empleado,
-        fecha_alta,
-        usuario
-        )
-        = (
-        modificarEmpleado.id,
-        modificarEmpleado.nombre,
-        modificarEmpleado.apellido1,
-        modificarEmpleado.apellido2,
-        modificarEmpleado.domicilio,
-        modificarEmpleado.codigo_postal,
-        modificarEmpleado.telefono,
-        modificarEmpleado.email,
-        modificarEmpleado.cat_empleado,
-        modificarEmpleado.fecha_alta,
-        modificarEmpleado.usuario
-    );
-    
-    IF modificarEmpleado.usuario IS NOT NULL THEN
-        IF modificarEmpleado.cat_empleado = 1 THEN
-            crearEmpleadoString := 'R_DIRECTOR';
-        ELSEIF crearEmpleado.cat_empleado = 2 THEN
-            crearEmpleadoString := 'R_SUPERVISOR';
-        ELSEIF crearEmpleado.cat_empleado = 3 THEN
-            crearEmpleadoString := 'R_CAJERO';
-        END IF;
-    
-        EXECUTE IMMEDIATE
-            'CREATE USER ' ||crearEmpleado.usuario|| ' IDENTIFIED BY mercoracle
-            PROFILE ' ||createEmpleadoString|| '; ';
-    END IF;
-         
-EXCEPTION
-
-END;
 
 PROCEDURE bloquearUsuario(empleado EMPLEADO%ROWTYPE) AS
 BEGIN
-  ALTER USER bloquearUsuario.empleado.usuario ACCOUNT LOCK;
-END;
+  EXECUTE IMMEDIATE 'ALTER USER ' || empleado.usuario || ' ACCOUNT LOCK;';
+END bloquearUsuario;
 
 PROCEDURE desbloquearUsuario(empleado EMPLEADO%ROWTYPE) AS
 BEGIN
-  ALTER USER bloquearUsuario.empleado.usuario ACCOUNT UNLOCK;
-END;
+  EXECUTE IMMEDIATE 'ALTER USER ' || empleado.usuario || ' ACCOUNT UNLOCK;';
+END desbloquearUsuario;
                      
-PROCEDURE bloquearTodos() AS
-DECLARE
-    prof VARCHAR2;
-BEGIN
+PROCEDURE bloquearTodos AS
+    prof VARCHAR2(100);
     CURSOR empleados_user IS
-        SELECT usuario FROM empleados;
+        SELECT usuario FROM empleado;
+BEGIN
     FOR e_user IN empleados_user
-        SELECT profile FROM dba_users 
-        WHERE username IS e_user
-        INTO prof;
-        IF prof != "R_DIRECTOR" THEN
-            ALTER USER e_user ACCOUNT LOCK;
+    LOOP
+        SELECT profile INTO prof FROM all_users 
+        WHERE username = e_user;
+        IF prof != 'R_DIRECTOR' THEN
+            EXECUTE IMMEDIATE 'ALTER USER ' || e_user || ' ACCOUNT LOCK;';
         END IF;
     END LOOP;
-END;
+END bloquearTodos;
                      
-PROCEDURE desbloquearTodos() AS
-DECLARE
-    prof VARCHAR2;
-BEGIN
+PROCEDURE desbloquearTodos AS
+    prof VARCHAR2(20);
     CURSOR empleados_user IS
-        SELECT usuario FROM empleados;
+        SELECT usuario FROM empleado;
+BEGIN
     FOR e_user IN empleados_user
-        SELECT profile FROM dba_users 
-        WHERE username IS e_user
-        INTO prof;
-        IF prof != "R_DIRECTOR" THEN
-            ALTER USER e_user ACCOUNT UNLOCK;
+    LOOP
+        SELECT profile INTO prof FROM all_users 
+        WHERE upper(username) = upper(e_user);
+        IF prof != 'R_DIRECTOR' THEN
+            EXECUTE IMMEDIATE 'ALTER USER ' || username || ' ACCOUNT UNLOCK;';
         END IF;
     END LOOP;
-EXCEPTION
-
-END;
+END desbloquearTodos;
 
 -- Habrá un procedimiento P_EmpleadoDelAño que aumentará el sueldo bruto en un 10% al empleado más eficiente en caja (que ha emitido un mayor número de tickets).
-CREATE OR REPLACE PROCEDURE P_EMPLEADO_DEL_AÑO AS
+PROCEDURE P_EMPLEADO_DEL_AÑO AS
 VAR_MAX_EMITIDOS NUMBER;
 VAR_EMPLEADO NUMBER;
 CURSOR C_NOMINAS(empleado_id number) IS SELECT * FROM NOMINA
@@ -553,9 +526,9 @@ BEGIN
     LOOP
         UPDATE NOMINA SET IMPORTE_BRUTO = VAR_NOMINA.IMPORTE_BRUTO*1.1 WHERE FECHA_EMISION = VAR_NOMINA.FECHA_EMISION;
     END LOOP;
+END P_EMPLEADO_DEL_AÑO;
 END;
 /
-
      
 -- 7.
 --Escribir un trigger que al introducir un ticket (en realidad, el detalle del ticket) decremente convenientemente el atributo Exposición de dicho producto. 
