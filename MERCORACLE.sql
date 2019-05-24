@@ -695,3 +695,136 @@ ALTER TABLE ENTREGA      MODIFY (ID DEFAULT SECUENCIA_ID_ENTREGA.NEXTVAL);
 ALTER TABLE RETENCION    MODIFY (ID DEFAULT SECUENCIA_ID_RETENCION.NEXTVAL);
 ALTER TABLE CATEGORIA    MODIFY (ID DEFAULT SECUENCIA_ID_CATEGORIA.NEXTVAL);
 ALTER TABLE CAT_EMPLEADO MODIFY (ID DEFAULT SECUENCIA_ID_CAT_EMPLEADO.NEXTVAL);
+                                        
+-- B. Comprobar el formato de los campos en las actualizaciones.
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_EMPLEADO_EMAIL
+BEFORE UPDATE
+    OF EMAIL ON EMPLEADO
+FOR EACH ROW
+DECLARE
+    REGEX_EMAIL VARCHAR2(50) := '^[A-Za-z0-9]+@[A-Za-z0-9]+\.[A-Za-z]+';
+BEGIN
+    IF NOT REGEXP_LIKE(:NEW.EMAIL, REGEX_EMAIL) THEN
+        RAISE_APPLICATION_ERROR(-20000,'Email no valido');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_PRODUCTO_STOCK
+BEFORE UPDATE
+    OF STOCK ON PRODUCTO
+FOR EACH ROW
+BEGIN
+    IF :NEW.STOCK < 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El stock de un producto no puede ser negativo');
+    ELSIF REMAINDER(:NEW.STOCK, 1) != 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El stock de un producto debe ser un numero entero');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_PESO_NETO
+BEFORE UPDATE
+    OF PESO_NETO ON PRODUCTO
+FOR EACH ROW
+BEGIN
+    IF :NEW.PESO_NETO < 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El peso neto de un producto no puede ser negativo');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_PRODUCTO_EXPOSICION
+BEFORE UPDATE
+    OF EXPOSICION ON PRODUCTO
+FOR EACH ROW
+BEGIN
+    IF :NEW.EXPOSICION < 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El numero de articulos en exposicion de un producto no puede ser negativo');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_PRODUCTO_PRECIO_ACTUAL
+BEFORE UPDATE
+    OF PRECIO_ACTUAL ON PRODUCTO
+FOR EACH ROW
+BEGIN
+    IF :NEW.PRECIO_ACTUAL < 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El precio de un producto no puede ser negativo');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_PRODUCTO_PRECIO_ACTUAL
+BEFORE UPDATE
+    OF PRECIO_ACTUAL ON PRODUCTO
+FOR EACH ROW
+BEGIN
+    IF :NEW.PRECIO_ACTUAL < 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El numero de articulos de un mismo producto no puede ser negativo');
+    ELSIF REMAINDER(:NEW.PRECIO_ACTUAL, 1) != 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El numero de articulos de un mismo producto tiene que ser un numero entero');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_FIDELIZADO_PUNTOS_ACUMULADOS
+BEFORE UPDATE
+    OF PUNTOS_ACUMULADOS ON FIDELIZADO
+FOR EACH ROW
+BEGIN
+    IF :NEW.PUNTOS_ACUMULADOS < 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El numero de puntos acumulados no puede ser negativo');
+    ELSIF REMAINDER(:NEW.PUNTOS_ACUMULADOS, 1) != 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El numero de puntos acumulados tiene que ser un numero entero');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_FIDELIZADO_EMAIL
+BEFORE UPDATE
+    OF EMAIL ON FIDELIZADO
+FOR EACH ROW
+DECLARE
+    REGEX_EMAIL VARCHAR2(50) := '^[A-Za-z0-9]+@[A-Za-z0-9]+\.[A-Za-z]+';
+BEGIN
+    IF NOT REGEXP_LIKE(:NEW.EMAIL, REGEX_EMAIL) THEN
+        RAISE_APPLICATION_ERROR(-20000,'Email no valido');
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER TR_CHECK_MOBILIARIO_CAPACIDAD
+BEFORE UPDATE
+    OF CAPACIDAD ON MOBILIARIO
+FOR EACH ROW
+BEGIN
+    IF :NEW.CAPACIDAD IS NOT NULL AND :NEW.CAPACIDAD < 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'La capacidad no puede ser negativa');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_MOBILIARIO_EN_USO
+BEFORE UPDATE
+    OF EN_USO ON MOBILIARIO
+FOR EACH ROW
+BEGIN
+    IF :NEW.EN_USO < 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El numero de slots utilizados no puede ser negativo');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_NOMINA_IMPORTE_NETO
+BEFORE UPDATE
+    OF IMPORTE_NETO, IMPORTE_BRUTO ON NOMINA
+FOR EACH ROW
+BEGIN
+    IF :NEW.IMPORTE_NETO > :NEW.IMPORTE_BRUTO THEN
+        RAISE_APPLICATION_ERROR(-20000,'El importe neto no puede ser superior al bruto');
+    END IF;
+END;
+/
