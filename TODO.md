@@ -1,6 +1,6 @@
 ### Lista de tareas por hacer
 - [x] Secuencias para los identificadores. [**MANUEL**]
-- [ ] A la hora de crear usuarios, que el tablespace sea mercoracle. También, asignar un perfil (otra tarea que viene más adelante) y una cuota. [**MANUEL**]
+- [x] A la hora de crear usuarios, que el tablespace sea mercoracle y asignarle una cuota. [**MANUEL**]
 - [ ] Comprobar el formato de los valores que se están introduciendo, así como su coherencia (precios negativos...).
 - [ ] Crear un usuario para ejecutar los jobs. [**ADRI**]
 - [ ] Auditorías.[**ADRI**]
