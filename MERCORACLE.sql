@@ -757,19 +757,6 @@ BEGIN
 END;
 /
                                         
-CREATE OR REPLACE TRIGGER TR_CHECK_PRODUCTO_PRECIO_ACTUAL
-BEFORE UPDATE
-    OF PRECIO_ACTUAL ON PRODUCTO
-FOR EACH ROW
-BEGIN
-    IF :NEW.PRECIO_ACTUAL < 0 THEN
-        RAISE_APPLICATION_ERROR(-20000,'El numero de articulos de un mismo producto no puede ser negativo');
-    ELSIF REMAINDER(:NEW.PRECIO_ACTUAL, 1) != 0 THEN
-        RAISE_APPLICATION_ERROR(-20000,'El numero de articulos de un mismo producto tiene que ser un numero entero');
-    END IF;
-END;
-/
-                                        
 CREATE OR REPLACE TRIGGER TR_CHECK_FIDELIZADO_PUNTOS_ACUMULADOS
 BEFORE UPDATE
     OF PUNTOS_ACUMULADOS ON FIDELIZADO
@@ -825,6 +812,52 @@ FOR EACH ROW
 BEGIN
     IF :NEW.IMPORTE_NETO > :NEW.IMPORTE_BRUTO THEN
         RAISE_APPLICATION_ERROR(-20000,'El importe neto no puede ser superior al bruto');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_PROVEEDOR_EMAIL
+BEFORE UPDATE
+    OF EMAIL ON PROVEEDOR
+FOR EACH ROW
+DECLARE
+    REGEX_EMAIL VARCHAR2(50) := '^[A-Za-z0-9]+@[A-Za-z0-9]+\.[A-Za-z]+';
+BEGIN
+    IF NOT REGEXP_LIKE(:NEW.EMAIL, REGEX_EMAIL) THEN
+        RAISE_APPLICATION_ERROR(-20000,'Email no valido');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_RETENCIONES_PORCENTAJE
+BEFORE UPDATE
+    OF PORCENTAJE ON RETENCIONES
+FOR EACH ROW
+BEGIN
+    IF :NEW.PORCENTAJE < 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El porcentaje de una retencion no puede ser negativo');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_TICKET_TOTAL
+BEFORE UPDATE
+    OF TOTAL ON TICKET
+FOR EACH ROW
+BEGIN
+    IF :NEW.TOTAL IS NOT NULL AND :NEW.TOTAL < 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El total de un ticket no puede ser negativo');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_TICKET_PUNTOS
+BEFORE UPDATE
+    OF PUNTOS ON TICKET
+FOR EACH ROW
+BEGIN
+    IF :NEW.PUNTOS IS NOT NULL AND :NEW.PUNTOS < 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'Los puntos de un ticket no pueden ser negativos');
     END IF;
 END;
 /
