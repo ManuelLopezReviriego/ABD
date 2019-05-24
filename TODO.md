@@ -2,10 +2,10 @@
 - [x] Secuencias para los identificadores. [**MANUEL**]
 - [ ] A la hora de crear usuarios, que el tablespace sea mercoracle. También, asignar un perfil (otra tarea que viene más adelante) y una cuota.
 - [ ] Comprobar el formato de los valores que se están introduciendo, así como su coherencia (precios negativos...).
-- [ ] Crear un usuario para ejecutar los jobs.
-- [ ] Auditorías.
+- [ ] Crear un usuario para ejecutar los jobs. [**ADRI**]
+- [ ] Auditorías.[**ADRI**]
 - [ ] Profile.
-- [ ] Comprobar privilegios donde se utiliza execute immediate.
+- [ ] Comprobar privilegios donde se utiliza execute immediate.[**ADRI**]
 - [ ] Creación de índices (hay varios tipos, por lo que no creemos solo del tipo básico).
 - [ ] Asignar a los roles más permisos (véase la pregunta sobre seguridad apartado 3).
 - [ ] Política de gestión de claves.
