@@ -4,7 +4,7 @@
 - [ ] Comprobar el formato de los valores que se están introduciendo, así como su coherencia (precios negativos...).
 - [ ] Crear un usuario para ejecutar los jobs. [**ADRI**]
 - [ ] Auditorías.[**ADRI**]
-- [ ] Profile.
+- [ ] Profile. [**MANUEL**]
 - [ ] Comprobar privilegios donde se utiliza execute immediate.[**ADRI**]
 - [ ] Creación de índices (hay varios tipos, por lo que no creemos solo del tipo básico).
 - [ ] Asignar a los roles más permisos (véase la pregunta sobre seguridad apartado 3).
