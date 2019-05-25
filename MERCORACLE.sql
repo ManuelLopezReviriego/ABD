@@ -657,7 +657,8 @@ start_date => SYSDATE,
 repeat_interval => 'FREQ=WEEKLY;BYDAY=SAT;BYHOUR=22',
 end_date => '30/MAY/2020 20.00.00',
 enabled => TRUE,
-comments => 'Ejecuta el procedimiento P_Reasignar_metros todos los sabados a las 22:00');
+comments => 'Ejecuta el procedimiento P_Reasignar_metros todos los sabados a las 22:00'),
+credential_name => 'PLANIFICADOR');
 END;
 /
 
@@ -894,3 +895,14 @@ CREATE BITMAP INDEX IDX_PRODUCTO_CATEGORIA ON PRODUCTO(CATEGORIA);
 
 CREATE INDEX IDX_FIDELIZADO_EMAIL ON FIDELIZADO(EMAIL);
 CREATE INDEX IDX_PROVEEDOR_NOMBRE ON PROVEEDOR(NOMBRE_PROVEEDOR);
+                                        
+-- E. Creacion de usuario PLANIFICADOR para la ejecucion de jobs.
+-- [MANUEL] Por si no le diera tiempo al que se encargaba de esta tarea.
+BEGIN
+DBMS_CREDENTIAL.CREATE_CREDENTIAL (
+   credential_name => 'CREDENCIAL_PLANIFICADOR',
+   username        => 'PLANIFICADOR',
+   password        => 'bd',
+   comments        => 'Usuario para la ejecucion de jobs');
+END;
+/
