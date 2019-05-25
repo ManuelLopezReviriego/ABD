@@ -6,7 +6,7 @@
 - [ ] Auditorías.[**ADRI**]
 - [ ] Profile. [**MANUEL**]
 - [ ] Comprobar privilegios donde se utiliza execute immediate.[**ADRI**]
-- [ ] Creación de índices (hay varios tipos, por lo que no creemos solo del tipo básico). [**MANUEL**]
+- [x] Creación de índices (hay varios tipos, por lo que no creemos solo del tipo básico). [**MANUEL**]
 - [ ] Asignar a los roles más permisos (véase la pregunta sobre seguridad apartado 3). [**MANUEL**]
 - [ ] Política de gestión de claves.
 - [ ] TDE.
