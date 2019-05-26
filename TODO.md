@@ -8,6 +8,6 @@
 - [ ] Comprobar privilegios donde se utiliza execute immediate.[**ADRI**]
 - [x] Creación de índices (hay varios tipos, por lo que no creemos solo del tipo básico). [**MANUEL**]
 - [ ] Asignar a los roles más permisos (véase la pregunta sobre seguridad apartado 3). [**MANUEL**]
-- [ ] Política de gestión de claves.
+- [ ] Política de gestión de claves.[**ALBERTO**]
 - [ ] TDE.
 - [ ] VPD.
