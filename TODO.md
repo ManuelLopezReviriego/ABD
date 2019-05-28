@@ -10,4 +10,4 @@
 - [ ] Asignar a los roles más permisos (véase la pregunta sobre seguridad apartado 3). [**MANUEL**]
 - [ ] Política de gestión de claves.[**ALBERTO**]
 - [ ] TDE.[**ALBERTO**]
-- [ ] VPD.[**ALBERTO**]
+- [ ] VPD.
