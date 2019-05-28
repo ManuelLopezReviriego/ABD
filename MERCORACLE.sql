@@ -941,4 +941,9 @@ Falta por realizar la segunda parte(VPD y TDE) , pero no están realizadas aún 
 Privilegios comprobados donde se realiza Execute Immediate, TODO OK.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 */
+       
+-- TDE.
+ALTER TABLE NOMINA MODIFY(IMPORTE_NETO ENCRYPT);
+ALTER TABLE NOMINA MODIFY(IMPORTE_BRUTO ENCRYPT);
+-- Tenemos que debatir que columnas queremos considerar como sensibles.
 
