@@ -947,3 +947,27 @@ ALTER TABLE NOMINA MODIFY(IMPORTE_NETO ENCRYPT);
 ALTER TABLE NOMINA MODIFY(IMPORTE_BRUTO ENCRYPT);
 -- Tenemos que debatir que columnas queremos considerar como sensibles.
 
+-- VPD.
+[ALBERTO]
+create or replace function sec_function(p_schema varchar2, p_obj varchar2)
+  Return varchar2
+is
+  user VARCHAR2(100);
+Begin
+if (SYS_CONTEXT('USERENV', 'ISDBA')='TRUE') 
+then return ''; -- Si el usuario se conecta como sysdba, podrá ver toda la tabla.
+else
+  user := SYS_CONTEXT('userenv', 'SESSION_USER');
+  return 'UPPER(USUARIO) = ''' || user || '''';
+end if;
+End;
+/
+             
+begin dbms_rls.add_policy (object_schema =>'MERCORACLE',
+object_name =>'NOMINA',
+policy_name =>'NOM_POLICY',
+function_schema =>'MERCORACLE',
+policy_function => 'SEC_FUNCTION',
+statement_types => 'SELECT, UPDATE' ); end;
+
+-- Ahora hay que crear un usuario e introducir este en uno de los empleados. Lo he intentado pero me da un error de política. HAY QUE ARREGLARLO
