@@ -906,3 +906,39 @@ DBMS_CREDENTIAL.CREATE_CREDENTIAL (
    comments        => 'Usuario para la ejecucion de jobs');
 END;
 /
+   
+-- E. Creacion de usuario PLANIFICADOR para la ejecucion de jobs.
+  BEGIN
+DBMS_CREDENTIAL.CREATE_CREDENTIAL (
+   credential_name => 'CREDENCIAL_PLANIFICADOR',
+   username        => 'PLANIFICADOR',
+   password        => 'password', /*Nos dijo enrique de no poner BD como contraseña a todo */
+   comments        => 'Creación de usuario para la ejecución de jobs');
+END;
+/
+ /*O, en Su defecto*/
+   Create user Planificador IDENTIFIED by password default tablespace TS_MERCORACLE quota 10M on TS_MERCORACLE;
+   GRANT EXECUTE on SYS.DBMS_JOB to Planificador ;
+/*Hay que hacerlo desde Sys
+En la documentación
+The Database Administrator user does not have the right to allow the Database User to execute jobs in the Oracle 11g and 12c database software.
+---------------------------------------------------------------------------------------------------------------------------------------------
+*/
+
+ -- F.1 Configuración de Audits para la Modificación de Empleados,Clientes y Nóminas
+CREATE AUDIT POLICY Mod_Empleado ACTIONS DELETE on Mercoracle.Empleado, INSERT on Mercoracle.Empleado, UPDATE on Mercoracle.Empleado;
+CREATE AUDIT POLICY Mod_Cliente ACTIONS DELETE on Mercoracle.Cliente, INSERT on Mercoracle.Cliente, UPDATE on Mercoracle.Cliente;
+CREATE AUDIT POLICY Mod_Nomina ACTIONS DELETE on Mercoracle.Nomina, INSERT on Mercoracle.Nomina, UPDATE on Mercoracle.Nomina;
+
+ -- F.2 Configuración de Audits para políticas de seguridad
+           /*
+Falta por realizar la segunda parte(VPD y TDE) , pero no están realizadas aún por los compañeros
+---------------------------------------------------------------------------------------------------------------------------------------------
+*/
+
+  -- G Comprobación de privilegios donde se ejecuta Execute Immediate.
+/*
+Privilegios comprobados donde se realiza Execute Immediate, TODO OK.
+---------------------------------------------------------------------------------------------------------------------------------------------
+*/
+
