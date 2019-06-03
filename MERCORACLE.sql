@@ -861,6 +861,31 @@ Falta por realizar la segunda parte(VPD y TDE) , pero no están realizadas aún 
 Privilegios comprobados donde se realiza Execute Immediate, TODO OK.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 */
+             
+-- H. Creación de perfiles.
+CREATE PROFILE PROF_DIRECTIVO LIMIT
+   SESSIONS_PER_USER 1
+   IDLE_TIME         20
+   CONNECT_TIME      120
+   CPU_PER_SESSION   UNLIMITED 
+   CPU_PER_CALL      3000
+   PRIVATE_SGA       30K
+   -- Politica de seguridad
+   FAILED_LOGIN_ATTEMPTS 3
+   PASSWORD_LIFE_TIME    30
+   PASSWORD_GRACE_TIME   7
+   PASSWORD_LOCK_TIME    1/24;
+   
+CREATE PROFILE PROF_EMPLEADO LIMIT
+   SESSIONS_PER_USER 3
+   IDLE_TIME 60
+   CONNECT_TIME UNLIMITED
+   CPU_PER_CALL 5000
+   -- Politica de seguridad
+   FAILED_LOGIN_ATTEMPTS 3
+   PASSWORD_LIFE_TIME    30
+   PASSWORD_GRACE_TIME   7
+   PASSWORD_LOCK_TIME    1/24;
        
 -- TDE.
 ALTER TABLE NOMINA MODIFY(IMPORTE_NETO ENCRYPT);
