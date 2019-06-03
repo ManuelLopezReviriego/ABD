@@ -908,13 +908,19 @@ The Database Administrator user does not have the right to allow the Database Us
  -- F.1 Configuración de Audits para la Modificación de Empleados,Clientes y Nóminas
              --[ADRIAN]
 CREATE AUDIT POLICY Mod_Empleado ACTIONS DELETE on Mercoracle.Empleado, INSERT on Mercoracle.Empleado, UPDATE on Mercoracle.Empleado;
+              AUDIT POLICY Mod_Empleado BY MERCORACLE;
 CREATE AUDIT POLICY Mod_Cliente ACTIONS DELETE on Mercoracle.Cliente, INSERT on Mercoracle.Cliente, UPDATE on Mercoracle.Cliente;
+             AUDIT POLICY Mod_Cliente BY MERCORACLE;
 CREATE AUDIT POLICY Mod_Nomina ACTIONS DELETE on Mercoracle.Nomina, INSERT on Mercoracle.Nomina, UPDATE on Mercoracle.Nomina;
+             AUDIT POLICY Mod_Nomina BY MERCORACLE;
 
  -- F.2 Configuración de Audits para políticas de seguridad
               --[ADRIAN y ALBERTO]
 CREATE AUDIT POLICY BAD_PRIVS ACTIONS GRANT ON Mercoracle.sec_function;
+             AUDIT POLICY BAD_PRIVS BY MERCORACLE;
 CREATE AUDIT POLICY EX_PRIV ACTIONS EXECUTE ON Mercoracle.sec_function;
+             AUDIT POLICY EX_PRIV BY MERCORACLE;
+             
 
   -- G Comprobación de privilegios donde se ejecuta Execute Immediate.
 /*
