@@ -828,6 +828,7 @@ END;
 /
    
 -- E. Creacion de usuario PLANIFICADOR para la ejecucion de jobs.
+            --[ADRIAN]
   BEGIN
 DBMS_CREDENTIAL.CREATE_CREDENTIAL (
    credential_name => 'CREDENCIAL_PLANIFICADOR',
@@ -846,6 +847,7 @@ The Database Administrator user does not have the right to allow the Database Us
 */
 
  -- F.1 Configuración de Audits para la Modificación de Empleados,Clientes y Nóminas
+             --[ADRIAN]
 CREATE AUDIT POLICY Mod_Empleado ACTIONS DELETE on Mercoracle.Empleado, INSERT on Mercoracle.Empleado, UPDATE on Mercoracle.Empleado;
 CREATE AUDIT POLICY Mod_Cliente ACTIONS DELETE on Mercoracle.Cliente, INSERT on Mercoracle.Cliente, UPDATE on Mercoracle.Cliente;
 CREATE AUDIT POLICY Mod_Nomina ACTIONS DELETE on Mercoracle.Nomina, INSERT on Mercoracle.Nomina, UPDATE on Mercoracle.Nomina;
@@ -898,7 +900,7 @@ ALTER TABLE NOMINA MODIFY(IMPORTE_BRUTO ENCRYPT);
 -- Tenemos que debatir que columnas queremos considerar como sensibles.
 
 -- VPD.
-[ALBERTO]
+--[ALBERTO]
 create or replace function sec_function(p_schema varchar2, p_obj varchar2)
   Return varchar2
 is
