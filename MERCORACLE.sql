@@ -887,7 +887,12 @@ CREATE PROFILE PROF_EMPLEADO LIMIT
    PASSWORD_GRACE_TIME   7
    PASSWORD_LOCK_TIME    1/24;
        
--- TDE.
+-- I. TDE.
+-- Esta seccion esta comentada por si se intenta ejecutar el script al completo.
+-- Al estar modificando un parametro estatico, hay que reiniciar la instancia una vez sea ejecutado
+-- lo siguiente:
+-- ALTER SYSTEM SET "WALLET_ROOT"='C:/Users/Manuel/Documents' scope=SPFILE;
+
 ALTER TABLE NOMINA MODIFY(IMPORTE_NETO ENCRYPT);
 ALTER TABLE NOMINA MODIFY(IMPORTE_BRUTO ENCRYPT);
 -- Tenemos que debatir que columnas queremos considerar como sensibles.
