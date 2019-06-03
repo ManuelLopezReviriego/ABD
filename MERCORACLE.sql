@@ -320,6 +320,21 @@ create or replace PACKAGE MERCORACLE.PK_EMPLEADO IS
     PROCEDURE SET_DOMICILIO(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE,
                             E_NUEVO_DOMICILIO MERCORACLE.EMPLEADO.DOMICILIO%TYPE,
                             E_NUEVO_COD_POSTAL NUMBER);
+                            
+    PROCEDURE PAGAR_NOMINA(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, IMPORTE_BRUTO NUMBER, IMPORTE_NETO NUMBER);
+    
+    PROCEDURE REPONER_PASILLO(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, N_PASILLO NUMBER);
+    PROCEDURE DEJAR_DE_REPONER_PASILLO(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, N_PASILLO NUMBER);
+    
+    PROCEDURE SUPERVISAR_EQUIPO(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, ID_EQUIPO NUMBER);
+    PROCEDURE DEJAR_DE_SUPERVISAR_EQUIPO(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, ID_EQUIPO NUMBER);
+    
+    
+    PROCEDURE ASIGNAR_CUENTA(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE,
+                             NOMBRE_USUARIO MERCORACLE.EMPLEADO.USUARIO%TYPE,
+                             CLAVE VARCHAR2,
+                             ESPACIO_TABLAS VARCHAR2,
+                             CUOTA VARCHAR2);
 END;
 /
 
@@ -407,6 +422,116 @@ create or replace PACKAGE BODY MERCORACLE.PK_EMPLEADO IS
     END SET_DOMICILIO;
 
     -------------------------------------------------------------------------------------------------------------
+    
+    -- Pagar la nomina al empleado con el DNI dado
+
+    PROCEDURE PAGAR_NOMINA(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, IMPORTE_BRUTO NUMBER, IMPORTE_NETO NUMBER) IS
+        ID_EMPLEADO NUMBER;
+    BEGIN
+        SELECT ID INTO ID_EMPLEADO FROM MERCORACLE.EMPLEADO WHERE UPPER(DNI) = UPPER(E_DNI);
+        INSERT INTO MERCORACLE.NOMINA(FECHA_EMISION, IMPORTE_NETO, EMPLEADO, IMPORTE_BRUTO)
+               VALUES (SYSDATE, IMPORTE_NETO, ID_EMPLEADO, IMPORTE_BRUTO);
+        COMMIT;
+    END PAGAR_NOMINA;
+
+    -------------------------------------------------------------------------------------------------------------
+    
+    -- Asignar un pasillo para reponer al empleado dado
+
+    PROCEDURE REPONER_PASILLO(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, N_PASILLO NUMBER) IS
+        ID_EMPLEADO NUMBER;
+    BEGIN
+        SELECT ID INTO ID_EMPLEADO FROM MERCORACLE.EMPLEADO WHERE UPPER(DNI) = UPPER(E_DNI);
+        INSERT INTO MERCORACLE.REPONE VALUES(ID_EMPLEADO, N_PASILLO);
+        COMMIT;
+    END REPONER_PASILLO;
+
+    -------------------------------------------------------------------------------------------------------------
+    
+    -- El empleado dado dejara de reponer en el pasillo en cuestion
+
+    PROCEDURE DEJAR_DE_REPONER_PASILLO(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, N_PASILLO NUMBER) IS
+        ID_EMPLEADO NUMBER;
+    BEGIN
+        SELECT ID INTO ID_EMPLEADO FROM MERCORACLE.EMPLEADO WHERE UPPER(DNI) = UPPER(E_DNI);
+        DELETE FROM MERCORACLE.REPONE WHERE EMPLEADO = ID_EMPLEADO AND PASILLO = N_PASILLO;
+        COMMIT;
+    END DEJAR_DE_REPONER_PASILLO;
+
+    -------------------------------------------------------------------------------------------------------------
+    
+    -- Se le asigna la supervision de un equipo a un empleado dado
+
+    PROCEDURE SUPERVISAR_EQUIPO(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, ID_EQUIPO NUMBER) IS
+        ID_EMPLEADO NUMBER;
+    BEGIN
+        SELECT ID INTO ID_EMPLEADO FROM MERCORACLE.EMPLEADO WHERE UPPER(DNI) = UPPER(E_DNI);
+        INSERT INTO MERCORACLE.SUPERVISA VALUES(ID_EMPLEADO, ID_EQUIPO);
+        COMMIT;
+    END SUPERVISAR_EQUIPO;
+
+    -------------------------------------------------------------------------------------------------------------
+    
+    -- Se elimina la supervision de un equipo por parte de un empleado dado
+
+    PROCEDURE DEJAR_DE_SUPERVISAR_EQUIPO(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, ID_EQUIPO NUMBER) IS
+        ID_EMPLEADO NUMBER;
+    BEGIN
+        SELECT ID INTO ID_EMPLEADO FROM MERCORACLE.EMPLEADO WHERE UPPER(DNI) = UPPER(E_DNI);
+        DELETE FROM MERCORACLE.SUPERVISA WHERE EMPLEADO = ID_EMPLEADO AND EQUIPO = ID_EQUIPO;
+        COMMIT;
+    END DEJAR_DE_SUPERVISAR_EQUIPO;
+
+    -------------------------------------------------------------------------------------------------------------
+    
+    -- Crea una cuenta para el usuario dado
+
+    PROCEDURE ASIGNAR_CUENTA(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE,
+                             NOMBRE_USUARIO MERCORACLE.EMPLEADO.USUARIO%TYPE,
+                             CLAVE VARCHAR2,
+                             ESPACIO_TABLAS VARCHAR2,
+                             CUOTA VARCHAR2) IS
+                             
+        SENT_CREAR_USUARIO VARCHAR2(100);
+        SENT_GRANT_CONNECT VARCHAR2(100);
+        SENT_ASIGNAR_ROL   VARCHAR2(100);
+        EMP                MERCORACLE.EMPLEADO%ROWTYPE;
+    BEGIN
+        SENT_CREAR_USUARIO := 'CREATE USER ' || NOMBRE_USUARIO ||
+                              ' IDENTIFIED BY "' || CLAVE || '"' ||
+                              ' DEFAULT TABLESPACE ' || ESPACIO_TABLAS ||
+                              ' QUOTA ' || CUOTA || ' ON ' || ESPACIO_TABLAS;
+        SENT_GRANT_CONNECT := 'GRANT CONNECT TO ' || NOMBRE_USUARIO;
+        
+        DBMS_OUTPUT.PUT_LINE(SENT_CREAR_USUARIO);       
+        EXECUTE IMMEDIATE SENT_CREAR_USUARIO;
+        
+        DBMS_OUTPUT.PUT_LINE(SENT_GRANT_CONNECT);
+        EXECUTE IMMEDIATE SENT_GRANT_CONNECT;
+
+        SELECT * INTO EMP FROM EMPLEADO WHERE UPPER(DNI) = UPPER(E_DNI);
+        
+        IF UPPER(EMP.CAT_EMPLEADO) = 'DIRECTOR' THEN
+            SENT_ASIGNAR_ROL := 'GRANT ROLE R_DIRECTOR TO ' || EMP.USUARIO || ';';
+            DBMS_OUTPUT.PUT_LINE(SENT_ASIGNAR_ROL);
+            EXECUTE IMMEDIATE SENT_ASIGNAR_ROL;
+        ELSIF UPPER(EMP.CAT_EMPLEADO) = 'SUPERVISOR' THEN
+            SENT_ASIGNAR_ROL := 'GRANT ROLE R_SUPERVISOR TO ' || EMP.USUARIO || ';';
+            DBMS_OUTPUT.PUT_LINE(SENT_ASIGNAR_ROL);
+            EXECUTE IMMEDIATE SENT_ASIGNAR_ROL;
+        ELSIF UPPER(EMP.CAT_EMPLEADO) = 'CAJERO-REPONEDOR' THEN
+            SENT_ASIGNAR_ROL := 'GRANT ROLE R_CAJERO TO ' || EMP.USUARIO || ';';
+            DBMS_OUTPUT.PUT_LINE(SENT_ASIGNAR_ROL);
+            EXECUTE IMMEDIATE SENT_ASIGNAR_ROL;
+        END IF;
+        
+        UPDATE MERCORACLE.EMPLEADO SET USUARIO = NOMBRE_USUARIO WHERE UPPER(DNI) = UPPER(E_DNI); 
+        
+        DBMS_OUTPUT.PUT_LINE('Usuario creado con exito');
+    END ASIGNAR_CUENTA;
+
+    -------------------------------------------------------------------------------------------------------------
+
 END;
 /
                         
