@@ -1016,7 +1016,7 @@ CREATE PROFILE PROF_EMPLEADO LIMIT
 -- Al estar modificando un parametro estatico, hay que reiniciar la instancia una vez sea ejecutado
 -- lo siguiente:
 -- ALTER SYSTEM SET "WALLET_ROOT"='C:/Users/Manuel/Documents' scope=SPFILE;
-
+--
 ALTER TABLE NOMINA MODIFY(IMPORTE_NETO ENCRYPT);
 ALTER TABLE NOMINA MODIFY(IMPORTE_BRUTO ENCRYPT);
 -- Tenemos que debatir que columnas queremos considerar como sensibles.
@@ -1036,12 +1036,21 @@ else
 end if;
 End;
 /
-             
+ALTER TABLE MERCORACLE.NOMINA ADD USUARIO VARCHAR2(100);
+-- Muestra los datos pertenecientes al usuario conectado en la tabla NOMINA.
 begin dbms_rls.add_policy (object_schema =>'MERCORACLE',
 object_name =>'NOMINA',
 policy_name =>'NOM_POLICY',
 function_schema =>'MERCORACLE',
 policy_function => 'SEC_FUNCTION',
-statement_types => 'SELECT, UPDATE' ); end;
+statement_types => 'SELECT' ); end;
+             
+-- Muestra los datos pertenecientes al usuario conectado en la tabla EMPLEADO.
+begin dbms_rls.add_policy (object_schema =>'MERCORACLE',
+object_name =>'EMPLEADO',
+policy_name =>'EMP_POLICY',
+function_schema =>'SYSTEM',
+policy_function => 'SEC_FUNCTION',
+statement_types => 'SELECT' ); end;
 
 -- Ahora hay que crear un usuario e introducir este en uno de los empleados. Lo he intentado pero me da un error de política. HAY QUE ARREGLARLO
