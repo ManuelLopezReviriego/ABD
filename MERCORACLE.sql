@@ -859,10 +859,8 @@ CREATE AUDIT POLICY Mod_Cliente ACTIONS DELETE on Mercoracle.Cliente, INSERT on 
 CREATE AUDIT POLICY Mod_Nomina ACTIONS DELETE on Mercoracle.Nomina, INSERT on Mercoracle.Nomina, UPDATE on Mercoracle.Nomina;
 
  -- F.2 Configuración de Audits para políticas de seguridad
-           /*
-Falta por realizar la segunda parte(VPD y TDE) , pero no están realizadas aún por los compañeros
----------------------------------------------------------------------------------------------------------------------------------------------
-*/
+CREATE AUDIT POLICY BAD_PRIVS ACTIONS GRANT ON Mercoracle.sec_function;
+CREATE AUDIT POLICY EX_PRIV ACTIONS EXECUTE ON Mercoracle.sec_function;
 
   -- G Comprobación de privilegios donde se ejecuta Execute Immediate.
 /*
