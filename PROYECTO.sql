@@ -1,7 +1,7 @@
 -- CODIGO DEL PROYECTO PARA ADMINISTRACION DE BASES DE DATOS DEL GRUPO SYSDBA
 -- Junio de 2019
 --
--- Ejecutar desde el usuario SYSTEM (las tablas, procedimientos, paquetes, etc. se crearán en el esquema MERCORACLE).
+-- Ejecutar las 800 primeras lineas desde el usuario SYSTEM (las tablas, procedimientos, paquetes, etc. se crearán en el esquema MERCORACLE).
 
 -- PRELIMINARES
 
@@ -13,6 +13,8 @@ grant create view, create table, create procedure to mercoracle;
 grant connect to mercoracle with admin option;
 grant r_supervisor, r_director, r_cajero to mercoracle with admin option;
 grant create user, drop user, alter user to mercoracle;
+
+-- Ejecutar desde mercoracle el script que se subió para generar las tablas y los datos
 
 -- CODIGO DEL PROYECTO EN SI
 
@@ -763,3 +765,280 @@ comments => 'Ejecuta el procedimiento P_Reasignar_metros todos los sabados a las
 credential_name => 'PLANIFICADOR');
 END;
 /
+                                        
+-- El codigo que viene a continuacion es para introducir funcionalidades y otros elementos no exigidos explicitamente en el enunciado
+
+-- A. Creación de secuencias para atributos auto-generados.
+                                        
+CREATE SEQUENCE MERCORACLE.SECUENCIA_ID_FACTURA;
+CREATE SEQUENCE MERCORACLE.SECUENCIA_ID_TICKET;
+CREATE SEQUENCE MERCORACLE.SECUENCIA_ID_EMPLEADO;
+CREATE SEQUENCE MERCORACLE.SECUENCIA_NUMERO_TARJETA;
+CREATE SEQUENCE MERCORACLE.SECUENCIA_ID_PROVEEDOR;
+CREATE SEQUENCE MERCORACLE.SECUENCIA_ID_EQUIPO;
+CREATE SEQUENCE MERCORACLE.SECUENCIA_ID_MOBILIARIO;
+CREATE SEQUENCE MERCORACLE.SECUENCIA_ID_LOTE;
+CREATE SEQUENCE MERCORACLE.SECUENCIA_ID_OFERTA;
+CREATE SEQUENCE MERCORACLE.SECUENCIA_ID_PASILLO;
+CREATE SEQUENCE MERCORACLE.SECUENCIA_ID_ENTREGA;
+CREATE SEQUENCE MERCORACLE.SECUENCIA_ID_RETENCION;
+CREATE SEQUENCE MERCORACLE.SECUENCIA_ID_CATEGORIA;
+CREATE SEQUENCE MERCORACLE.MERCORACLE.SECUENCIA_ID_CAT_EMPLEADO;
+
+ALTER TABLE MERCORACLE.FACTURA      MODIFY (ID DEFAULT MERCORACLE.SECUENCIA_ID_FACTURA.NEXTVAL);
+ALTER TABLE MERCORACLE.TICKET       MODIFY (ID DEFAULT MERCORACLE.SECUENCIA_ID_TICKET.NEXTVAL);
+ALTER TABLE MERCORACLE.EMPLEADO     MODIFY (ID DEFAULT MERCORACLE.SECUENCIA_ID_EMPLEADO.NEXTVAL);
+ALTER TABLE MERCORACLE.FIDELIZADO   MODIFY (N_TARJETA DEFAULT MERCORACLE.SECUENCIA_NUMERO_TARJETA.NEXTVAL);
+ALTER TABLE MERCORACLE.PROVEEDOR    MODIFY (ID DEFAULT MERCORACLE.SECUENCIA_ID_PROVEEDOR.NEXTVAL);
+ALTER TABLE MERCORACLE.EQUIPO       MODIFY (ID DEFAULT MERCORACLE.SECUENCIA_ID_EQUIPO.NEXTVAL);
+ALTER TABLE MERCORACLE.MOBILIARIO   MODIFY (ID DEFAULT MERCORACLE.SECUENCIA_ID_MOBILIARIO.NEXTVAL);
+ALTER TABLE MERCORACLE.LOTE         MODIFY (ID DEFAULT MERCORACLE.SECUENCIA_ID_LOTE.NEXTVAL);
+ALTER TABLE MERCORACLE.OFERTA       MODIFY (ID DEFAULT MERCORACLE.SECUENCIA_ID_OFERTA.NEXTVAL);
+ALTER TABLE MERCORACLE.PASILLO      MODIFY (ID DEFAULT MERCORACLE.SECUENCIA_ID_PASILLO.NEXTVAL);
+ALTER TABLE MERCORACLE.ENTREGA      MODIFY (ID DEFAULT MERCORACLE.SECUENCIA_ID_ENTREGA.NEXTVAL);
+ALTER TABLE MERCORACLE.RETENCION    MODIFY (ID DEFAULT MERCORACLE.SECUENCIA_ID_RETENCION.NEXTVAL);
+ALTER TABLE MERCORACLE.CATEGORIA    MODIFY (ID DEFAULT MERCORACLE.SECUENCIA_ID_CATEGORIA.NEXTVAL);
+ALTER TABLE MERCORACLE.CAT_EMPLEADO MODIFY (ID DEFAULT MERCORACLE.SECUENCIA_ID_CAT_EMPLEADO.NEXTVAL);
+                                        
+-- Lo siguiente habria que ejecutarlo con el usuario MERCORACLE
+
+-- B. Comprobar el formato de los campos en las actualizaciones.
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_EMPLEADO_EMAIL
+BEFORE UPDATE
+    OF EMAIL ON EMPLEADO
+FOR EACH ROW
+DECLARE
+    REGEX_EMAIL VARCHAR2(50) := '^[A-Za-z0-9]+@[A-Za-z0-9]+\.[A-Za-z]+';
+BEGIN
+    IF NOT REGEXP_LIKE(:NEW.EMAIL, REGEX_EMAIL) THEN
+        RAISE_APPLICATION_ERROR(-20000,'Email no valido');
+    END IF;
+END;
+/
+
+ALTER TABLE PRODUCTO
+ADD CONSTRAINT CHECK_PRODUCTO_STOCK CHECK (STOCK >= 0);
+                                        
+ALTER TABLE PRODUCTO
+ADD CONSTRAINT CHECK_PESO_NETO CHECK (PESO_NETO >= 0);
+
+ALTER TABLE PRODUCTO
+ADD CONSTRAINT CHECK_PRODUCTO_EXPOSICION CHECK (EXPOSICION >= 0);
+                                        
+ALTER TABLE PRODUCTO
+ADD CONSTRAINT CHECK_PRODUCTO_PRECIO_ACTUAL CHECK (PRECIO_ACTUAL >= 0);                                    
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_FIDELIZADO_PUNTOS_ACUMULADOS
+BEFORE UPDATE
+    OF PUNTOS_ACUMULADOS ON FIDELIZADO
+FOR EACH ROW
+BEGIN
+    IF :NEW.PUNTOS_ACUMULADOS < 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El numero de puntos acumulados no puede ser negativo');
+    ELSIF REMAINDER(:NEW.PUNTOS_ACUMULADOS, 1) != 0 THEN
+        RAISE_APPLICATION_ERROR(-20000,'El numero de puntos acumulados tiene que ser un numero entero');
+    END IF;
+END;
+/
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_FIDELIZADO_EMAIL
+BEFORE UPDATE
+    OF EMAIL ON FIDELIZADO
+FOR EACH ROW
+DECLARE
+    REGEX_EMAIL VARCHAR2(50) := '^[A-Za-z0-9]+@[A-Za-z0-9]+\.[A-Za-z]+';
+BEGIN
+    IF NOT REGEXP_LIKE(:NEW.EMAIL, REGEX_EMAIL) THEN
+        RAISE_APPLICATION_ERROR(-20000,'Email no valido');
+    END IF;
+END;
+/
+
+ALTER TABLE MOBILIARIO
+ADD CONSTRAINT CHECK_MOBILIARIO_CAPACIDAD CHECK (CAPACIDAD >= 0);   
+
+ALTER TABLE MOBILIARIO
+ADD CONSTRAINT CHECK_MOBILIARIO_EN_USO CHECK (EN_USO >= 0);   
+                                        
+ALTER TABLE NOMINA
+ADD CONSTRAINT CHECK_NOMINA_IMPORTE_NETO CHECK (IMPORTE_NETO <= IMPORTE_BRUTO);   
+                                  
+                                        
+CREATE OR REPLACE TRIGGER TR_CHECK_PROVEEDOR_EMAIL
+BEFORE UPDATE
+    OF EMAIL ON PROVEEDOR
+FOR EACH ROW
+DECLARE
+    REGEX_EMAIL VARCHAR2(50) := '^[A-Za-z0-9]+@[A-Za-z0-9]+\.[A-Za-z]+';
+BEGIN
+    IF NOT REGEXP_LIKE(:NEW.EMAIL, REGEX_EMAIL) THEN
+        RAISE_APPLICATION_ERROR(-20000,'Email no valido');
+    END IF;
+END;
+/
+
+ALTER TABLE RETENCIONES
+ADD CONSTRAINT CHECK_RETENCIONES_PORCENTAJE CHECK (PORCENTAJE >= 0);   
+                                        
+ALTER TABLE TICKET
+ADD CONSTRAINT CHECK_TICKET_TOTAL CHECK (TOTAL >= 0);   
+
+
+ALTER TABLE TICKET
+ADD CONSTRAINT CHECK_TICKET_PUNTOS CHECK (PUNTOS >= 0);
+
+-- C. Conceder permisos a roles.
+
+-- Solo los directores deberian tener acceso (lectura-escritura) a NOMINA.
+GRANT SELECT, INSERT, UPDATE, DELETE ON NOMINA TO R_DIRECTOR;
+
+-- Los cajeros pueden acceder e insertar nuevos tickets y facturas. No tienen permiso para actualizar o borrar este tipo de informacion.
+GRANT SELECT, INSERT ON TICKET TO R_CAJERO;
+GRANT SELECT, INSERT ON DETALLE TO R_CAJERO;
+GRANT SELECT, INSERT ON FACTURA TO R_CAJERO;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON REVISION TO R_SUPERVISOR;
+GRANT SELECT, INSERT, UPDATE, DELETE ON MOBILIARIO TO R_SUPERVISOR;
+GRANT SELECT, INSERT, UPDATE, DELETE ON PASILLO TO R_SUPERVISOR;
+GRANT SELECT, INSERT, UPDATE, DELETE ON PROVEEDOR TO R_SUPERVISOR;
+GRANT SELECT, INSERT, UPDATE, DELETE ON PROVEE TO R_SUPERVISOR;
+GRANT SELECT, INSERT, UPDATE, DELETE ON REPONE TO R_SUPERVISOR;
+GRANT SELECT, INSERT, UPDATE, DELETE ON SUPERVISA TO R_SUPERVISOR;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ENTREGA TO R_SUPERVISOR;
+                                        
+-- D. Creacion de indices.
+                                        
+CREATE BITMAP INDEX IDX_CLIENTE_CODIGO_POSTAL ON CLIENTE(CODIGO_POSTAL);
+CREATE INDEX IDX_CLIENTE_APELLIDOS ON CLIENTE(APELLIDO1, APELLIDO2);
+
+CREATE BITMAP INDEX IDX_EMPLEADO_CODIGO_POSTAL ON EMPLEADO(CODIGO_POSTAL);
+CREATE INDEX IDX_EMPLEADO_APELLIDOS ON EMPLEADO(APELLIDO1, APELLIDO2);
+CREATE INDEX IDX_EMPLEADO_EMAIL ON EMPLEADO(EMAIL);
+
+CREATE BITMAP INDEX IDX_PRODUCTO_CATEGORIA ON PRODUCTO(CATEGORIA);
+
+CREATE INDEX IDX_FIDELIZADO_EMAIL ON FIDELIZADO(EMAIL);
+CREATE INDEX IDX_PROVEEDOR_NOMBRE ON PROVEEDOR(NOMBRE_PROVEEDOR);
+                                        
+-- E. Creacion de usuario PLANIFICADOR para la ejecucion de jobs.
+-- [MANUEL] Por si no le diera tiempo al que se encargaba de esta tarea.
+BEGIN
+DBMS_CREDENTIAL.CREATE_CREDENTIAL (
+   credential_name => 'CREDENCIAL_PLANIFICADOR',
+   username        => 'PLANIFICADOR',
+   password        => 'bd',
+   comments        => 'Usuario para la ejecucion de jobs');
+END;
+/
+   
+-- E. Creacion de usuario PLANIFICADOR para la ejecucion de jobs.
+            --[ADRIAN]
+  BEGIN
+DBMS_CREDENTIAL.CREATE_CREDENTIAL (
+   credential_name => 'CREDENCIAL_PLANIFICADOR',
+   username        => 'PLANIFICADOR',
+   password        => 'password', /*Nos dijo enrique de no poner BD como contraseña a todo */
+   comments        => 'Creación de usuario para la ejecución de jobs');
+END;
+/
+ /*O, en Su defecto*/
+   Create user Planificador IDENTIFIED by password default tablespace TS_MERCORACLE quota 10M on TS_MERCORACLE;
+   GRANT EXECUTE on SYS.DBMS_JOB to Planificador ;
+/*Hay que hacerlo desde Sys
+En la documentación
+The Database Administrator user does not have the right to allow the Database User to execute jobs in the Oracle 11g and 12c database software.
+---------------------------------------------------------------------------------------------------------------------------------------------
+*/
+
+ -- F.1 Configuración de Audits para la Modificación de Empleados,Clientes y Nóminas
+             --[ADRIAN]
+CREATE AUDIT POLICY Mod_Empleado ACTIONS DELETE on Mercoracle.Empleado, INSERT on Mercoracle.Empleado, UPDATE on Mercoracle.Empleado;
+              AUDIT POLICY Mod_Empleado BY MERCORACLE;
+CREATE AUDIT POLICY Mod_Cliente ACTIONS DELETE on Mercoracle.Cliente, INSERT on Mercoracle.Cliente, UPDATE on Mercoracle.Cliente;
+             AUDIT POLICY Mod_Cliente BY MERCORACLE;
+CREATE AUDIT POLICY Mod_Nomina ACTIONS DELETE on Mercoracle.Nomina, INSERT on Mercoracle.Nomina, UPDATE on Mercoracle.Nomina;
+             AUDIT POLICY Mod_Nomina BY MERCORACLE;
+
+ -- F.2 Configuración de Audits para políticas de seguridad
+              --[ADRIAN y ALBERTO]
+CREATE AUDIT POLICY BAD_PRIVS ACTIONS GRANT ON Mercoracle.sec_function;
+             AUDIT POLICY BAD_PRIVS BY MERCORACLE;
+CREATE AUDIT POLICY EX_PRIV ACTIONS EXECUTE ON Mercoracle.sec_function;
+             AUDIT POLICY EX_PRIV BY MERCORACLE;
+             
+
+  -- G Comprobación de privilegios donde se ejecuta Execute Immediate.
+/*
+Privilegios comprobados donde se realiza Execute Immediate, TODO OK.
+---------------------------------------------------------------------------------------------------------------------------------------------
+*/
+             
+-- H. Creación de perfiles.
+CREATE PROFILE PROF_DIRECTIVO LIMIT
+   SESSIONS_PER_USER 1
+   IDLE_TIME         20
+   CONNECT_TIME      120
+   CPU_PER_SESSION   UNLIMITED 
+   CPU_PER_CALL      3000
+   PRIVATE_SGA       30K
+   -- Politica de seguridad
+   FAILED_LOGIN_ATTEMPTS 3
+   PASSWORD_LIFE_TIME    30
+   PASSWORD_GRACE_TIME   7
+   PASSWORD_LOCK_TIME    1/24;
+   
+CREATE PROFILE PROF_EMPLEADO LIMIT
+   SESSIONS_PER_USER 3
+   IDLE_TIME 60
+   CONNECT_TIME UNLIMITED
+   CPU_PER_CALL 5000
+   -- Politica de seguridad
+   FAILED_LOGIN_ATTEMPTS 3
+   PASSWORD_LIFE_TIME    30
+   PASSWORD_GRACE_TIME   7
+   PASSWORD_LOCK_TIME    1/24;
+       
+-- I. TDE.
+-- Esta seccion esta comentada por si se intenta ejecutar el script al completo.
+-- Al estar modificando un parametro estatico, hay que reiniciar la instancia una vez sea ejecutado
+-- lo siguiente:
+-- ALTER SYSTEM SET "WALLET_ROOT"='C:\Users\alumnos\Oracle\wallet' scope=SPFILE;
+-- ADMINISTER KEY MANAGEMENT CREATE KEYSTORE IDENTIFIED BY password; 
+-- ADMINISTER KEY MANAGEMENT CREATE AUTO_LOGIN KEYSTORE FROM KEYSTORE IDENTIFIED BY password;
+-- ADMINISTER KEY MANAGEMENT SET KEYSTORE open IDENTIFIED BY password;
+-- ADMINISTER KEY MANAGEMENT SET KEY identified by password with backup;
+-- ALTER TABLE NOMINA MODIFY(IMPORTE_NETO ENCRYPT);
+-- ALTER TABLE NOMINA MODIFY(IMPORTE_BRUTO ENCRYPT);
+
+-- VPD.
+--[ALBERTO]
+create or replace function sec_function(p_schema varchar2, p_obj varchar2)
+  Return varchar2
+is
+  user VARCHAR2(100);
+Begin
+if (SYS_CONTEXT('USERENV', 'ISDBA')='TRUE') 
+then return ''; -- Si el usuario se conecta como sysdba, podrá ver toda la tabla.
+else
+  user := SYS_CONTEXT('userenv', 'SESSION_USER');
+  return 'UPPER(USUARIO) = ''' || user || '''';
+end if;
+End;
+/
+ALTER TABLE MERCORACLE.NOMINA ADD USUARIO VARCHAR2(100);
+-- Muestra los datos pertenecientes al usuario conectado en la tabla NOMINA.
+begin dbms_rls.add_policy (object_schema =>'MERCORACLE',
+object_name =>'NOMINA',
+policy_name =>'NOM_POLICY',
+function_schema =>'MERCORACLE',
+policy_function => 'SEC_FUNCTION',
+statement_types => 'SELECT' ); end;
+             
+-- Muestra los datos pertenecientes al usuario conectado en la tabla EMPLEADO.
+begin dbms_rls.add_policy (object_schema =>'MERCORACLE',
+object_name =>'EMPLEADO',
+policy_name =>'EMP_POLICY',
+function_schema =>'SYSTEM',
+policy_function => 'SEC_FUNCTION',
+statement_types => 'SELECT' ); end;
