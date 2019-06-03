@@ -300,7 +300,60 @@ END;
 /* NOTA 1: AL FINAL TERMINE HICIENDO BORRON Y CUENTA NUEVA CON ESTE APARTADO AL COMPLETO PORQUE TENIA DEMASIADOS ERRORES.*/
 /* NOTA 2: NO HE PROBADO LOS METODOS PERO DEBERIAN FUNCIONAR CORRECTAMENTE */
 
+-- Definicion del paquete
+create or replace PACKAGE MERCORACLE.PK_EMPLEADO IS
+    PROCEDURE SET_NOMBRE(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, E_NOMBRE MERCORACLE.EMPLEADO.NOMBRE%TYPE);
+    PROCEDURE SET_PRIMER_APELLIDO(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, E_APELLIDO MERCORACLE.EMPLEADO.APELLIDO1%TYPE);
+    PROCEDURE SET_SEGUNDO_APELLIDO(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, E_APELLIDO MERCORACLE.EMPLEADO.APELLIDO2%TYPE);
+END;
 
+-- Implementacion del paquete
+create or replace PACKAGE BODY PK_EMPLEADO IS
+
+    -- Actualiza el nombre del empleado con el DNI dado
+    
+    PROCEDURE SET_NOMBRE(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, E_NOMBRE MERCORACLE.EMPLEADO.NOMBRE%TYPE) IS
+    BEGIN
+        UPDATE MERCORACLE.EMPLEADO SET NOMBRE = E_NOMBRE WHERE UPPER(DNI) = UPPER(E_DNI);
+        COMMIT;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('Error en PK_EMPLEADO.SET_NOMBRE: No existe ningun empleado con DNI ' || E_DNI);
+    END SET_NOMBRE;
+    
+    -------------------------------------------------------------------------------------------------------------
+    
+    -- Actualiza el primer apellido del empleado con el DNI dado
+    
+    PROCEDURE SET_PRIMER_APELLIDO(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, E_APELLIDO MERCORACLE.EMPLEADO.APELLIDO1%TYPE) IS
+    BEGIN
+        UPDATE MERCORACLE.EMPLEADO SET APELLIDO1 = E_APELLIDO WHERE UPPER(DNI) = UPPER(E_DNI);
+        COMMIT;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('Error en PK_EMPLEADO.SET_PRIMER_APELLIDO: No existe ningun empleado con DNI ' || E_DNI);
+    END SET_PRIMER_APELLIDO;
+    
+    -------------------------------------------------------------------------------------------------------------
+    
+    -- Actualiza el segundo apellido del empleado con el DNI dado
+    
+    PROCEDURE SET_SEGUNDO_APELLIDO(E_DNI MERCORACLE.EMPLEADO.DNI%TYPE, E_APELLIDO MERCORACLE.EMPLEADO.APELLIDO2%TYPE) IS
+    BEGIN
+        UPDATE MERCORACLE.EMPLEADO SET APELLIDO2 = E_APELLIDO WHERE UPPER(DNI) = UPPER(E_DNI);
+        COMMIT;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('Error en PK_EMPLEADO.SET_SEGUNDO_APELLIDO: No existe ningun empleado con DNI ' || E_DNI);
+    END SET_SEGUNDO_APELLIDO;
+    
+    -------------------------------------------------------------------------------------------------------------
+    
+END;
+/
+                        
+--- 
+                         
 CREATE OR REPLACE PACKAGE PK_EMPLEADO IS
     /* CREACION DE EMPLEADOS Y CUENTAS */
     PROCEDURE CREAR_EMPLEADO (EMP EMPLEADO%ROWTYPE, CLAVE VARCHAR2);
